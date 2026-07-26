@@ -3707,9 +3707,9 @@ function chargerAdminStats(){
 // ══════════════════════════════════════════════════════════════
 var ROLES_PERMISSIONS = {
   'barrysadio0@gmail.com':    { pages: ['*'], label: 'PDG — Accès complet', color: '#7C3AED' },
-  'hhaba@avimanager.sn':      { pages: ['dashboard','production','sante','stock','ai','rapports'], label: 'Production & Sanitaire', color: '#1D9E75' },
-  'arabioubah@avimanager.sn': { pages: ['dashboard','finance','commerce','pos','pdv','rapports','ai'], label: 'Finance & Commerce', color: '#2563EB' },
-  'ambarry@avimanager.sn':    { pages: ['dashboard','stock','production','rapports'], label: 'Responsable Stock', color: '#D97706' }
+  'hhaba@avimanager.sn':      { pages: ['production','sante'], label: 'Production & Sanitaire', color: '#1D9E75' },
+  'arabioubah@avimanager.sn': { pages: ['finance','commerce','pos','pdv'], label: 'Finance & Commerce', color: '#2563EB' },
+  'ambarry@avimanager.sn':    { pages: ['stock','production'], label: 'Responsable Stock', color: '#D97706' }
 }
 
 var PAGES_AUTORISEES = ['*']
@@ -3852,7 +3852,8 @@ function doLogin(){
     if(ls) ls.style.display = 'none';
     if(app){ app.style.display = 'block'; }
 
-    try { goPage('dashboard', null); } catch(e){ console.warn('goPage error:', e); }
+    var pageDepart = (PAGES_AUTORISEES[0] === '*') ? 'dashboard' : (PAGES_AUTORISEES[0] || 'dashboard')
+    try { goPage(pageDepart, null); } catch(e){ console.warn('goPage error:', e); }
     setTimeout(function(){
       try{ restaurerDonnees(); }catch(x){}
       try{ updateTimestamp(); }catch(x){}
