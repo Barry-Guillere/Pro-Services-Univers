@@ -396,7 +396,7 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
     <div class="page-header">
       <div>
         <div class="page-title" id="db-greeting">Bonjour, Amadou 👋</div>
-        <div class="page-sub" id="db-date" id="db-date">—</div>
+        <div class="page-sub" id="db-date">—</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <div>
@@ -426,7 +426,7 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
       </div>
       <div class="kpi-card" id="kc-alrt" style="border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.1)">
         <div class="kpi-label">Alertes actives</div>
-        <div class="kpi-value" id="kv-alrt" style="color:#DC2626">—</div>
+        <div class="kpi-value" id="kv-alrt" style="color:#F87171">—</div>
         <div class="kpi-delta down" id="kd-alrt">—</div>
       </div>
     </div>
@@ -445,12 +445,12 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
       </div>
       <div class="kpi-card" id="kc-crea" style="border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.1)">
         <div class="kpi-label">Créances en retard</div>
-        <div class="kpi-value" id="kv-crea" style="color:#DC2626">—</div>
+        <div class="kpi-value" id="kv-crea" style="color:#F87171">—</div>
         <div class="kpi-delta down" id="kd-crea">—</div>
       </div>
       <div class="kpi-card" id="kc-stk" style="border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.1)">
         <div class="kpi-label">Stock bas</div>
-        <div class="kpi-value" id="kv-stk" style="color:#D97706">—</div>
+        <div class="kpi-value" id="kv-stk" style="color:#FBBF24">—</div>
         <div class="kpi-delta down" id="kd-stk">—</div>
       </div>
     </div>
@@ -2242,7 +2242,7 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
           </tbody>
         </table>
       </div>
-      <div style="margin-top:10px;padding:10px 12px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;font-size:12px;color:#166534">
+      <div style="margin-top:10px;padding:10px 12px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.35);border-radius:8px;font-size:12px;color:#4ADE80">
         💡 Pour modifier les membres de l'équipe, allez dans <strong>⚙️ Paramètres → Équipe & Responsables</strong>
       </div>
     </div>
@@ -2799,11 +2799,11 @@ create policy "maj" on avidata for update using (true);</code>
   </div>
 
   <!-- ── INFORMATIONS DE LA FERME ── -->
-  <div class="param-section" style="background:white;border:1px solid var(--gray-200,#E5E7EB);border-radius:12px;margin-bottom:14px;overflow:hidden">
+  <div class="param-section" style="background:var(--white);border:1px solid var(--gray-200,#E5E7EB);border-radius:12px;margin-bottom:14px;overflow:hidden">
     <div style="padding:12px 18px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:10px">
-      <div style="width:34px;height:34px;border-radius:9px;background:#E8FAF3;display:flex;align-items:center;justify-content:center;font-size:16px">🏠</div>
+      <div style="width:34px;height:34px;border-radius:9px;background:rgba(29,158,117,.15);display:flex;align-items:center;justify-content:center;font-size:16px">🏠</div>
       <div>
-        <div style="font-size:13.5px;font-weight:800">Informations de la ferme</div>
+        <div style="font-size:13.5px;font-weight:800;color:var(--gray-900)">Informations de la ferme</div>
         <div style="font-size:11.5px;color:var(--gray-500)">Identité officielle — apparaît sur les rapports PDF</div>
       </div>
     </div>
@@ -2841,11 +2841,11 @@ create policy "maj" on avidata for update using (true);</code>
   </div>
 
   <!-- ── ÉQUIPE ── -->
-  <div class="param-section" style="background:white;border:1px solid var(--gray-200);border-radius:12px;margin-bottom:14px;overflow:hidden">
+  <div class="param-section" style="background:var(--white);border:1px solid var(--gray-200);border-radius:12px;margin-bottom:14px;overflow:hidden">
     <div style="padding:12px 18px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:10px">
-      <div style="width:34px;height:34px;border-radius:9px;background:#DBEAFE;display:flex;align-items:center;justify-content:center;font-size:16px">👥</div>
+      <div style="width:34px;height:34px;border-radius:9px;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;font-size:16px">👥</div>
       <div>
-        <div style="font-size:13.5px;font-weight:800">Équipe & Responsables</div>
+        <div style="font-size:13.5px;font-weight:800;color:var(--gray-900)">Équipe & Responsables</div>
         <div style="font-size:11.5px;color:var(--gray-500)">Noms, rôles et numéros de téléphone</div>
       </div>
     </div>
@@ -2892,11 +2892,11 @@ create policy "maj" on avidata for update using (true);</code>
   </div>
 
   <!-- ── BÂTIMENTS ── -->
-  <div class="param-section" style="background:white;border:1px solid var(--gray-200);border-radius:12px;margin-bottom:14px;overflow:hidden">
+  <div class="param-section" style="background:var(--white);border:1px solid var(--gray-200);border-radius:12px;margin-bottom:14px;overflow:hidden">
     <div style="padding:12px 18px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:10px">
-      <div style="width:34px;height:34px;border-radius:9px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:16px">🐔</div>
+      <div style="width:34px;height:34px;border-radius:9px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;font-size:16px">🐔</div>
       <div>
-        <div style="font-size:13.5px;font-weight:800">Configuration des bâtiments</div>
+        <div style="font-size:13.5px;font-weight:800;color:var(--gray-900)">Configuration des bâtiments</div>
         <div style="font-size:11.5px;color:var(--gray-500)">Lots, races, effectifs et objectifs de ponte</div>
       </div>
     </div>
@@ -2904,8 +2904,8 @@ create policy "maj" on avidata for update using (true);</code>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
 
         <!-- Bâtiment A -->
-        <div style="padding:14px;background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px">
-          <div style="font-size:13px;font-weight:800;color:#166534;margin-bottom:10px">🏠 Bâtiment A</div>
+        <div style="padding:14px;background:rgba(34,197,94,.1);border:1.5px solid rgba(34,197,94,.4);border-radius:10px">
+          <div style="font-size:13px;font-weight:800;color:#4ADE80;margin-bottom:10px">🏠 Bâtiment A</div>
           <div class="form-field" style="margin-bottom:8px"><label>Numéro de lot</label><input type="text" id="bat-a-lot" placeholder="ex: LOT-2024-001" oninput="marquerModifications()"></div>
           <div class="form-field" style="margin-bottom:8px"><label>Race</label><input type="text" id="bat-a-race" placeholder="ex: ISA Brown" oninput="marquerModifications()"></div>
           <div class="form-field" style="margin-bottom:8px"><label>Effectif</label><input type="number" id="bat-a-eff" placeholder="ex: 8000" min="0" oninput="marquerModifications()"></div>
@@ -2913,8 +2913,8 @@ create policy "maj" on avidata for update using (true);</code>
         </div>
 
         <!-- Bâtiment B -->
-        <div style="padding:14px;background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:10px">
-          <div style="font-size:13px;font-weight:800;color:#1D4ED8;margin-bottom:10px">🏠 Bâtiment B</div>
+        <div style="padding:14px;background:rgba(59,130,246,.1);border:1.5px solid rgba(59,130,246,.4);border-radius:10px">
+          <div style="font-size:13px;font-weight:800;color:#60A5FA;margin-bottom:10px">🏠 Bâtiment B</div>
           <div class="form-field" style="margin-bottom:8px"><label>Numéro de lot</label><input type="text" id="bat-b-lot" placeholder="ex: LOT-2024-002" oninput="marquerModifications()"></div>
           <div class="form-field" style="margin-bottom:8px"><label>Race</label><input type="text" id="bat-b-race" placeholder="ex: ISA Brown" oninput="marquerModifications()"></div>
           <div class="form-field" style="margin-bottom:8px"><label>Effectif</label><input type="number" id="bat-b-eff" placeholder="ex: 8000" min="0" oninput="marquerModifications()"></div>
@@ -2922,8 +2922,8 @@ create policy "maj" on avidata for update using (true);</code>
         </div>
 
         <!-- Bâtiment C -->
-        <div style="padding:14px;background:#F5F3FF;border:1.5px solid #DDD6FE;border-radius:10px">
-          <div style="font-size:13px;font-weight:800;color:#6D28D9;margin-bottom:10px">🏠 Bâtiment C</div>
+        <div style="padding:14px;background:rgba(139,92,246,.1);border:1.5px solid rgba(139,92,246,.4);border-radius:10px">
+          <div style="font-size:13px;font-weight:800;color:#A78BFA;margin-bottom:10px">🏠 Bâtiment C</div>
           <div class="form-field" style="margin-bottom:8px"><label>Numéro de lot</label><input type="text" id="bat-c-lot" placeholder="ex: LOT-2024-003" oninput="marquerModifications()"></div>
           <div class="form-field" style="margin-bottom:8px"><label>Race</label><input type="text" id="bat-c-race" placeholder="ex: Lohmann Brown" oninput="marquerModifications()"></div>
           <div class="form-field" style="margin-bottom:8px"><label>Effectif</label><input type="number" id="bat-c-eff" placeholder="ex: 8000" min="0" oninput="marquerModifications()"></div>
@@ -2937,37 +2937,36 @@ create policy "maj" on avidata for update using (true);</code>
   </div>
 
   <!-- ── PRIX ALIMENT ── -->
-  <div class="param-section" style="background:white;border:1px solid var(--gray-200);border-radius:12px;margin-bottom:14px;overflow:hidden">
+  <div class="param-section" style="background:var(--white);border:1px solid var(--gray-200);border-radius:12px;margin-bottom:14px;overflow:hidden">
     <div style="padding:12px 18px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:10px">
-      <div style="width:34px;height:34px;border-radius:9px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:16px">🌾</div>
+      <div style="width:34px;height:34px;border-radius:9px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;font-size:16px">🌾</div>
       <div>
-        <div style="font-size:13.5px;font-weight:800">Prix de vente de l'aliment (GNF)</div>
+        <div style="font-size:13.5px;font-weight:800;color:var(--gray-900)">Prix de vente de l'aliment (GNF)</div>
         <div style="font-size:11.5px;color:var(--gray-500)">Tarifs affichés à la caisse POS et ventes externes</div>
       </div>
     </div>
     <div style="padding:16px 18px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-        <div style="padding:14px;background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:10px">
-          <div style="font-size:13px;font-weight:800;color:#92400E;margin-bottom:12px">🌱 Aliment Démarrage</div>
+        <div style="padding:14px;background:rgba(245,158,11,.1);border:1.5px solid rgba(245,158,11,.4);border-radius:10px">
+          <div style="font-size:13px;font-weight:800;color:#FBBF24;margin-bottom:12px">🌱 Aliment Démarrage</div>
           <div style="display:flex;flex-direction:column;gap:10px">
             <div style="display:flex;align-items:center;justify-content:space-between">
               <span style="font-size:13px;color:var(--gray-700)">Sac 50 kg</span>
               <div style="display:flex;align-items:center;gap:6px">
-                <input type="number" id="p-dem-50" placeholder="16000" min="0" oninput="marquerModifications()" style="width:110px;padding:7px 10px;border:1.5px solid #FDE68A;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:right">
-                <span style="font-size:12px;color:#92400E;font-weight:700">GNF</span>
+                <input type="number" id="p-dem-50" placeholder="16000" min="0" oninput="marquerModifications()" style="width:110px;padding:7px 10px;border:1.5px solid rgba(245,158,11,.4);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:right;background:var(--gray-50);color:var(--gray-900)">
+                <span style="font-size:12px;color:#FBBF24;font-weight:700">GNF</span>
               </div>
-            </div>
             </div>
           </div>
         </div>
-        <div style="padding:14px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px">
-          <div style="font-size:13px;font-weight:800;color:#166534;margin-bottom:12px">🥚 Aliment Ponte</div>
+        <div style="padding:14px;background:rgba(34,197,94,.1);border:1.5px solid rgba(34,197,94,.4);border-radius:10px">
+          <div style="font-size:13px;font-weight:800;color:#4ADE80;margin-bottom:12px">🥚 Aliment Ponte</div>
           <div style="display:flex;flex-direction:column;gap:10px">
             <div style="display:flex;align-items:center;justify-content:space-between">
               <span style="font-size:13px;color:var(--gray-700)">Sac 50 kg</span>
               <div style="display:flex;align-items:center;gap:6px">
-                <input type="number" id="p-pont-50" placeholder="18000" min="0" oninput="marquerModifications()" style="width:110px;padding:7px 10px;border:1.5px solid #86EFAC;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:right">
-                <span style="font-size:12px;color:#166534;font-weight:700">GNF</span>
+                <input type="number" id="p-pont-50" placeholder="18000" min="0" oninput="marquerModifications()" style="width:110px;padding:7px 10px;border:1.5px solid rgba(34,197,94,.4);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:right;background:var(--gray-50);color:var(--gray-900)">
+                <span style="font-size:12px;color:#4ADE80;font-weight:700">GNF</span>
               </div>
             </div>
           </div>
@@ -2980,73 +2979,91 @@ create policy "maj" on avidata for update using (true);</code>
   </div>
 
   <!-- ── ALERTES ── -->
-  <div class="param-section" style="background:white;border:1px solid var(--gray-200);border-radius:12px;margin-bottom:14px;overflow:hidden">
+  <div class="param-section" style="background:var(--white);border:1px solid var(--gray-200);border-radius:12px;margin-bottom:14px;overflow:hidden;max-width:600px;margin-left:auto;margin-right:auto">
     <div style="padding:12px 18px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:10px">
-      <div style="width:34px;height:34px;border-radius:9px;background:#FFE4E6;display:flex;align-items:center;justify-content:center;font-size:16px">🔔</div>
+      <div style="width:34px;height:34px;border-radius:9px;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;font-size:16px">🔔</div>
       <div>
-        <div style="font-size:13.5px;font-weight:800">Alertes & Seuils</div>
+        <div style="font-size:13.5px;font-weight:800;color:var(--gray-900)">Alertes & Seuils</div>
         <div style="font-size:11.5px;color:var(--gray-500)">Déclencheurs automatiques</div>
       </div>
     </div>
-    <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gray-100)">
-        <div><div style="font-size:13px;font-weight:600">Alerte chute de ponte</div><div style="font-size:11.5px;color:var(--gray-500)">Déclencher si le taux baisse de plus de X%</div></div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" id="p-seuil-ponte" placeholder="5" min="1" max="30" oninput="marquerModifications()" style="width:70px;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:center">
-          <span style="font-size:12px;color:var(--gray-500)">%</span>
+    <div style="padding:16px 18px">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px">
+        <div style="padding:14px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:10px;min-width:0;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+            <span style="font-size:13px;font-weight:700;color:var(--gray-900)">Alerte chute de ponte</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="p-seuil-ponte" placeholder="5" min="1" max="30" oninput="marquerModifications()" style="width:60px;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:7px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:center;background:var(--white);color:var(--gray-900)">
+              <span style="font-size:11.5px;color:var(--gray-500)">%</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--gray-500)">Déclencher si le taux baisse de plus de X%</div>
+        </div>
+        <div style="padding:14px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:10px;min-width:0;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+            <span style="font-size:13px;font-weight:700;color:var(--gray-900)">Stock aliment minimum</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="p-seuil-stock" placeholder="20" min="1" oninput="marquerModifications()" style="width:60px;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:7px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:center;background:var(--white);color:var(--gray-900)">
+              <span style="font-size:11.5px;color:var(--gray-500)">sacs</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--gray-500)">Alerter quand le stock est bas</div>
+        </div>
+        <div style="padding:14px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:10px;min-width:0;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+            <span style="font-size:13px;font-weight:700;color:var(--gray-900)">Mortalité journalière max</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="p-seuil-mort" placeholder="10" min="1" oninput="marquerModifications()" style="width:60px;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:7px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:center;background:var(--white);color:var(--gray-900)">
+              <span style="font-size:11.5px;color:var(--gray-500)">sujets</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--gray-500)">Alerte si dépassé par bâtiment</div>
+        </div>
+        <div style="padding:14px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:10px;min-width:0;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+            <span style="font-size:13px;font-weight:700;color:var(--gray-900)">Rappel vaccin (jours avant)</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="p-rappel-vac" placeholder="7" min="1" oninput="marquerModifications()" style="width:60px;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:7px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:center;background:var(--white);color:var(--gray-900)">
+              <span style="font-size:11.5px;color:var(--gray-500)">jours</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--gray-500)">Notifier X jours avant la date prévue</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gray-100)">
-        <div><div style="font-size:13px;font-weight:600">Stock aliment minimum</div><div style="font-size:11.5px;color:var(--gray-500)">Alerter quand le stock est bas</div></div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" id="p-seuil-stock" placeholder="20" min="1" oninput="marquerModifications()" style="width:70px;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:center">
-          <span style="font-size:12px;color:var(--gray-500)">sacs</span>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gray-100)">
-        <div><div style="font-size:13px;font-weight:600">Mortalité journalière max</div><div style="font-size:11.5px;color:var(--gray-500)">Alerte si dépassé par bâtiment</div></div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" id="p-seuil-mort" placeholder="10" min="1" oninput="marquerModifications()" style="width:70px;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:center">
-          <span style="font-size:12px;color:var(--gray-500)">sujets</span>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0">
-        <div><div style="font-size:13px;font-weight:600">Rappel vaccin (jours avant)</div><div style="font-size:11.5px;color:var(--gray-500)">Notifier X jours avant la date prévue</div></div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" id="p-rappel-vac" placeholder="7" min="1" oninput="marquerModifications()" style="width:70px;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:center">
-          <span style="font-size:12px;color:var(--gray-500)">jours</span>
-        </div>
-      </div>
-      <div style="text-align:right">
+      <div style="text-align:right;margin-top:12px">
         <button class="btn btn-p btn-sm" onclick="validerSection('alertes')">✅ Valider cette section</button>
       </div>
     </div>
   </div>
 
   <!-- ── APPARENCE ── -->
-  <div class="param-section" style="background:white;border:1px solid var(--gray-200);border-radius:12px;margin-bottom:80px;overflow:hidden">
+  <div class="param-section" style="background:var(--white);border:1px solid var(--gray-200);border-radius:12px;margin-bottom:80px;overflow:hidden;max-width:600px;margin-left:auto;margin-right:auto">
     <div style="padding:12px 18px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:10px">
-      <div style="width:34px;height:34px;border-radius:9px;background:#F3E8FF;display:flex;align-items:center;justify-content:center;font-size:16px">🎨</div>
-      <div><div style="font-size:13.5px;font-weight:800">Apparence & Données</div></div>
+      <div style="width:34px;height:34px;border-radius:9px;background:rgba(139,92,246,.15);display:flex;align-items:center;justify-content:center;font-size:16px">🎨</div>
+      <div><div style="font-size:13.5px;font-weight:800;color:var(--gray-900)">Apparence & Données</div></div>
     </div>
     <div style="padding:16px 18px">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gray-100)">
-        <div><div style="font-size:13px;font-weight:600">Couleur principale</div><div style="font-size:11.5px;color:var(--gray-500)">Appliquée en temps réel</div></div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <input type="color" id="p-couleur" value="#1D9E75" oninput="appliquerCouleurLive(this.value)" style="width:42px;height:36px;border:1.5px solid var(--gray-200);border-radius:8px;cursor:pointer;padding:2px">
-          <input type="text" id="p-couleur-hex" placeholder="#1D9E75" maxlength="7" oninput="sync_couleur_hex()" style="width:90px;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:monospace;outline:none">
-          <button class="btn btn-d btn-sm" onclick="reinitCouleur()">Défaut</button>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px">
+        <div style="padding:14px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:10px;min-width:0;overflow:hidden">
+          <div style="font-size:13px;font-weight:700;color:var(--gray-900);margin-bottom:10px">Couleur principale</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+            <input type="color" id="p-couleur" value="#1D9E75" oninput="appliquerCouleurLive(this.value)" style="width:38px;height:34px;border:1.5px solid var(--gray-200);border-radius:8px;cursor:pointer;padding:2px">
+            <input type="text" id="p-couleur-hex" placeholder="#1D9E75" maxlength="7" oninput="sync_couleur_hex()" style="width:85px;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:7px;font-size:12.5px;font-family:monospace;outline:none;background:var(--white);color:var(--gray-900)">
+            <button class="btn btn-d btn-sm" onclick="reinitCouleur()">Défaut</button>
+          </div>
+          <div style="font-size:11px;color:var(--gray-500)">Appliquée en temps réel</div>
         </div>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0">
-        <div><div style="font-size:13px;font-weight:600">Exporter la configuration JSON</div><div style="font-size:11.5px;color:var(--gray-500)">Sauvegarde de tous les paramètres</div></div>
-        <button class="btn btn-s" onclick="exporterParametres()">📥 Exporter JSON</button>
+        <div style="padding:14px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:10px;min-width:0;overflow:hidden">
+          <div style="font-size:13px;font-weight:700;color:var(--gray-900);margin-bottom:10px">Exporter la configuration JSON</div>
+          <button class="btn btn-s btn-sm" onclick="exporterParametres()" style="margin-bottom:6px">📥 Exporter JSON</button>
+          <div style="font-size:11px;color:var(--gray-500)">Sauvegarde de tous les paramètres</div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Barre fixe en bas -->
-  <div style="position:sticky;bottom:0;background:white;border-top:1px solid var(--gray-200);padding:14px 0;display:flex;align-items:center;justify-content:space-between;margin-top:16px">
+  <div style="position:sticky;bottom:0;background:var(--white);border-top:1px solid var(--gray-200);padding:14px 0;display:flex;align-items:center;justify-content:space-between;margin-top:16px">
     <div id="param-last-saved" style="font-size:12px;color:var(--gray-400)">Aucune sauvegarde</div>
     <div style="display:flex;gap:10px">
       <button class="btn btn-d" onclick="goPage('dashboard',null)">✕ Fermer</button>
@@ -4203,11 +4220,11 @@ function renderAlerts(){
     setDelta('kd-alrt','Tout est normal','neutral')
     return
   }
-  setKpi('kv-alrt',String(alerts.length),'#DC2626')
+  setKpi('kv-alrt',String(alerts.length),'#F87171')
   var crit=alerts.filter(function(a){return a.cls==='a-crit'}).length
   setDelta('kd-alrt',crit+' critique(s) · '+(alerts.length-crit)+' avert.','down')
   list.innerHTML=alerts.map(function(a){
-    return '<div class="'+a.cls+'" style="padding:10px 12px;border-radius:9px;margin-bottom:7px;background:'+(a.cls==='a-crit'?'#FFF1F2':'#FFFBEB')+';border-left:3px solid '+(a.cls==='a-crit'?'#EF4444':'#F59E0B')+'">'
+    return '<div class="'+a.cls+'" style="padding:10px 12px;border-radius:9px;margin-bottom:7px;background:'+(a.cls==='a-crit'?'rgba(239,68,68,.12)':'rgba(245,158,11,.12)')+';border-left:3px solid '+(a.cls==='a-crit'?'#EF4444':'#F59E0B')+'">'
     +'<div style="font-size:13px;font-weight:700;color:'+(a.cls==='a-crit'?'#B91C1C':'#B45309')+'">'+a.title+'</div>'
     +(a.sub?'<div style="font-size:11.5px;color:var(--gray-500);margin-top:3px">'+a.sub+'</div>':'')
     +'</div>'
@@ -4260,7 +4277,7 @@ function initDashboard(){
 
   // Afficher les KPIs
   var globalRate = (rA+rB+rC) > 0 ? ((rA+rB+rC)/3).toFixed(1)+'%' : '—'
-  setKpi('kv-rate', globalRate, (parseFloat(globalRate)||0)>=82?'#059669':'#DC2626')
+  setKpi('kv-rate', globalRate, (parseFloat(globalRate)||0)>=82?'#059669':'#F87171')
   setKpi('kv-ca',   S.ca>0 ? fmt(S.ca)+' GNF' : '—')
   setKpi('kv-tres', S.tres>0 ? fmt(S.tres)+' GNF' : '—')
 
@@ -4283,7 +4300,7 @@ function initDashboard(){
   if(S.rateA>0 && S.rateA < 75) alertes++
   if(S.rateB>0 && S.rateB < 75) alertes++
   if(S.rateC>0 && S.rateC < 75) alertes++
-  setKpi('kv-alrt', alertes>0?String(alertes):'0', alertes>0?'#DC2626':'#059669')
+  setKpi('kv-alrt', alertes>0?String(alertes):'0', alertes>0?'#F87171':'#059669')
 
   // Trésorerie depuis Finance
   if(typeof FIN !== 'undefined' && S.tres>0){
@@ -4297,14 +4314,14 @@ function initDashboard(){
   // ── KPI CRÉANCES (depuis Commerce) ─────────
   if(typeof COMMERCE!=='undefined' && COMMERCE.clients){
     var creancesTotal = COMMERCE.clients.reduce(function(s,cl){ return s+(cl.solde||0) },0)
-    setKpi('kv-crea', creancesTotal>0 ? fmt(creancesTotal)+' GNF' : '0 GNF', creancesTotal>0?'#DC2626':'#059669')
+    setKpi('kv-crea', creancesTotal>0 ? fmt(creancesTotal)+' GNF' : '0 GNF', creancesTotal>0?'#F87171':'#059669')
     setDelta('kd-crea', creancesTotal>0 ? 'À encaisser' : 'Aucune créance', creancesTotal>0?'down':'neutral')
   }
 
   // ── KPI STOCK BAS (depuis le module Stock : Œufs, Aliment, Barquettes) ──
   if(typeof STOCK_CATALOGUE!=='undefined' && typeof STOCK_QTE!=='undefined'){
     var sousSeuil = STOCK_CATALOGUE.filter(function(p){ return (STOCK_QTE[p.id]||{qte:0}).qte < p.seuil })
-    setKpi('kv-stk', sousSeuil.length>0 ? String(sousSeuil.length) : '0', sousSeuil.length>0?'#D97706':'#059669')
+    setKpi('kv-stk', sousSeuil.length>0 ? String(sousSeuil.length) : '0', sousSeuil.length>0?'#FBBF24':'#059669')
     setDelta('kd-stk', sousSeuil.length>0 ? sousSeuil.slice(0,2).map(function(p){return p.nom}).join(', ')+(sousSeuil.length>2?'...':'') : 'Tous les stocks sont OK', sousSeuil.length>0?'down':'neutral')
   }
 
@@ -5964,7 +5981,7 @@ function validerToutesPontes(){
   if(count === 0){
     const msgEl = document.getElementById('ponte-msg')
     msgEl.textContent = '⚠ Saisissez au moins un bâtiment'
-    msgEl.style.color = '#DC2626'
+    msgEl.style.color = '#F87171'
     return
   }
 
@@ -6009,7 +6026,7 @@ function mettreAJourTableauLots(resultats){
       if(lot && lot.textContent === LOTS[r.bat]){
         const tauxCell = row.querySelectorAll('td')[5]
         if(tauxCell){
-          const color = r.taux>=82?'#059669':r.taux>=75?'#D97706':'#DC2626'
+          const color = r.taux>=82?'#059669':r.taux>=75?'#FBBF24':'#F87171'
           tauxCell.innerHTML = '<span style="color:'+color+';font-weight:700">'+r.taux.toFixed(1)+'%</span>'
         }
       }
@@ -6030,7 +6047,7 @@ function mettreAJourDashboardDepuisPonte(resultats){
   if(kpiEl){
     const g = ((S.rateA+S.rateB+S.rateC)/3)
     kpiEl.textContent = g.toFixed(1)+'%'
-    kpiEl.style.color = g>=82?'#059669':'#DC2626'
+    kpiEl.style.color = g>=82?'#059669':'#F87171'
   }
 }
 
@@ -6449,7 +6466,7 @@ function calcMouvement(){
 
   if(!isEntree && newStock < 0){
     document.getElementById('mv-stock-info').textContent = 'Attention : stock insuffisant !'
-    document.getElementById('mv-stock-info').style.color = '#DC2626'
+    document.getElementById('mv-stock-info').style.color = '#F87171'
   } else {
     document.getElementById('mv-stock-info').textContent = ''
   }
@@ -9531,7 +9548,7 @@ function changerMotDePasse(){
   function showFb(msg, ok){
     if(!fb) return
     fb.style.display='block'
-    fb.style.color = ok ? '#059669' : '#DC2626'
+    fb.style.color = ok ? '#34D399' : '#F87171'
     fb.textContent = msg
     setTimeout(function(){ fb.style.display='none' }, 4000)
   }
