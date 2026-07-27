@@ -743,12 +743,11 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
             <select class="fact-prod-sel" onchange="majPrixLigne(this)" style="padding:7px 8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12.5px;font-family:inherit;outline:none">
               <option value="">Produit...</option>
               <option value="b30|1800">Barquette 30 œufs</option>
+              <option value="alv|1800">Alvéole œufs</option>
               <option value="poul|4500">Poulet réforme</option>
               <option value="fient|1500">Fiente séchée</option>
               <option value="ad50|16000">Aliment Dém. 50kg</option>
-              <option value="ad10|3400">Aliment Dém. 10kg</option>
               <option value="ap50|18000">Aliment Ponte 50kg</option>
-              <option value="ap10|3900">Aliment Ponte 10kg</option>
               <option value="autre|0">Autre produit</option>
             </select>
             <input type="number" class="fact-qte" placeholder="Qté" min="1" value="1" oninput="calcLigne(this)" style="padding:7px 8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:inherit;outline:none;text-align:center">
@@ -821,12 +820,11 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
             <select class="bdc-prod-sel" onchange="majPrixLigneBDC(this)" style="padding:7px 8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12.5px;font-family:inherit;outline:none">
               <option value="">Produit...</option>
               <option value="b30|1800">Barquette 30 œufs</option>
+              <option value="alv|1800">Alvéole œufs</option>
               <option value="poul|4500">Poulet réforme</option>
               <option value="fient|1500">Fiente séchée</option>
               <option value="ad50|16000">Aliment Dém. 50kg</option>
-              <option value="ad10|3400">Aliment Dém. 10kg</option>
               <option value="ap50|18000">Aliment Ponte 50kg</option>
-              <option value="ap10|3900">Aliment Ponte 10kg</option>
             </select>
             <input type="number" class="bdc-qte" placeholder="Qté" min="1" value="1" oninput="calcLigneBDC(this)" style="padding:7px 8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:inherit;outline:none;text-align:center">
             <input type="number" class="bdc-pu" placeholder="Prix/u (GNF)" min="0" oninput="calcLigneBDC(this)" style="padding:7px 8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:inherit;outline:none">
@@ -1410,6 +1408,7 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
           <div style="background:white;padding:10px;border-radius:8px">
             <div style="font-size:11px;font-weight:700;color:var(--gray-600);margin-bottom:8px">🥚 Oeufs & Barquettes</div>
             <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;margin-bottom:5px"><input type="checkbox" id="pdv-p-b30" value="b30" class="pdv-prod"> Barquette 30 œufs — 1 800 GNF</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;margin-bottom:5px"><input type="checkbox" id="pdv-p-alv" value="alv" class="pdv-prod"> Alvéole œufs — 1 800 GNF</label>
             <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer"><input type="checkbox" id="pdv-p-poul" value="poul" class="pdv-prod"> Poulet réforme — 4 500 GNF</label>
           </div>
           <!-- Aliment & Autres -->
@@ -2958,12 +2957,6 @@ create policy "maj" on avidata for update using (true);</code>
                 <span style="font-size:12px;color:#92400E;font-weight:700">GNF</span>
               </div>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <span style="font-size:13px;color:var(--gray-700)">Sac 10 kg</span>
-              <div style="display:flex;align-items:center;gap:6px">
-                <input type="number" id="p-dem-10" placeholder="3400" min="0" oninput="marquerModifications()" style="width:110px;padding:7px 10px;border:1.5px solid #FDE68A;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:right">
-                <span style="font-size:12px;color:#92400E;font-weight:700">GNF</span>
-              </div>
             </div>
           </div>
         </div>
@@ -2974,13 +2967,6 @@ create policy "maj" on avidata for update using (true);</code>
               <span style="font-size:13px;color:var(--gray-700)">Sac 50 kg</span>
               <div style="display:flex;align-items:center;gap:6px">
                 <input type="number" id="p-pont-50" placeholder="18000" min="0" oninput="marquerModifications()" style="width:110px;padding:7px 10px;border:1.5px solid #86EFAC;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:right">
-                <span style="font-size:12px;color:#166534;font-weight:700">GNF</span>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <span style="font-size:13px;color:var(--gray-700)">Sac 10 kg</span>
-              <div style="display:flex;align-items:center;gap:6px">
-                <input type="number" id="p-pont-10" placeholder="3900" min="0" oninput="marquerModifications()" style="width:110px;padding:7px 10px;border:1.5px solid #86EFAC;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;outline:none;text-align:right">
                 <span style="font-size:12px;color:#166534;font-weight:700">GNF</span>
               </div>
             </div>
@@ -3869,7 +3855,6 @@ function doLogin(){
       setTimeout(function(){
         try{ rafraichirFinance(); }catch(x){}
         try{ rafraichirLogistique(); }catch(x){}
-        try{ rafraichirAliment(); }catch(x){}
         try{ rafraichirStock(); }catch(x){}
         try{ rafraichirProduction(); }catch(x){}
         try{ rafraichirPageSante(); }catch(x){}
@@ -4684,7 +4669,6 @@ function rafraichirTousLesModules(){
   try{ initAllCharts(); }catch(e){}
   try{ rafraichirFinance(); }catch(e){}
   try{ rafraichirLogistique(); }catch(e){}
-  try{ rafraichirAliment(); }catch(e){}
   try{ rafraichirStock(); }catch(e){}
   try{ rafraichirProduction(); }catch(e){}
   try{ rafraichirPageSante(); }catch(e){}
@@ -5241,8 +5225,8 @@ function analyseLocale(ctx, question){
     r += NL + '<strong>Aliment disponible :</strong>' + NL
     var totPonte = ctx.aliment.ponte.s50 + ctx.aliment.ponte.s25 + ctx.aliment.ponte.s10
     var totDem   = ctx.aliment.demarrage.s50 + ctx.aliment.demarrage.s25 + ctx.aliment.demarrage.s10
-    r += '• Ponte : ' + totPonte + ' sacs (50kg×'+ctx.aliment.ponte.s50+', 10kg×'+ctx.aliment.ponte.s10+')' + NL
-    r += '• Démarrage : ' + totDem + ' sacs (50kg×'+ctx.aliment.demarrage.s50+', 10kg×'+ctx.aliment.demarrage.s10+')' + NL
+    r += '• Ponte : ' + totPonte + ' sacs (50kg×'+ctx.aliment.ponte.s50+')' + NL
+    r += '• Démarrage : ' + totDem + ' sacs (50kg×'+ctx.aliment.demarrage.s50+')' + NL
     if(totPonte < 10) r += '🔴 Stock aliment ponte faible — planifier production ou achat' + NL
   }
   else if(sujet === 'commerce'){
@@ -5817,7 +5801,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   setTimeout(function(){
     try{ chargerParametres() }catch(e){}
     try{ chargerAdmin() }catch(e){}
-    try{ initialiserTableauAviculture() }catch(e){}
   }, 200)
 
   const overlay = document.getElementById('modal-ponte')
@@ -6309,6 +6292,121 @@ function creerCommande(){
 // ══════════════════════════════════════════════════════════════
 //  MODAL MOUVEMENT STOCK
 // ══════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+//  MODULE PARAMÈTRES — chargement / sauvegarde
+// ════════════════════════════════════════════════════════════
+
+// ── Signale une modification non sauvegardée ──────────────────
+function marquerModifications(){
+  var badge = document.getElementById('param-unsaved-badge')
+  if(badge) badge.style.display = 'inline-block'
+}
+
+// ── Aperçu en direct de la couleur de marque ───────────────────
+function appliquerCouleurLive(hex){
+  document.documentElement.style.setProperty('--brand', hex)
+  var hexInput = document.getElementById('p-couleur-hex')
+  if(hexInput) hexInput.value = hex
+  marquerModifications()
+}
+function sync_couleur_hex(){
+  var hexInput = document.getElementById('p-couleur-hex')
+  var picker = document.getElementById('p-couleur')
+  if(!hexInput || !picker) return
+  var v = hexInput.value.trim()
+  if(/^#[0-9A-Fa-f]{6}$/.test(v)){
+    picker.value = v
+    document.documentElement.style.setProperty('--brand', v)
+  }
+  marquerModifications()
+}
+
+// ── Sauvegarder tous les paramètres ─────────────────────────────
+function sauvegarderParametres(){
+  function val(id){ var e=document.getElementById(id); return e ? e.value : '' }
+  var params = {
+    nomFerme:      val('p-nom-ferme')      || 'Pro-Services Univers',
+    raisonSociale: val('p-raison-sociale') || 'Entreprise Multiservices',
+    adresse:       val('p-adresse')        || 'Guillèrè, CU Boké, Guinée',
+    telephone:     val('p-telephone')      || '621 989 823',
+    email:         val('p-email')          || 'barrysadio0@gmail.com',
+    ninea:         val('p-ninea')          || 'NIF 444325021',
+    prixAliment: {
+      dem50: parseInt(val('p-dem-50'))||16000,
+      pont50: parseInt(val('p-pont-50'))||18000
+    },
+    seuils: {
+      ponte: parseInt(val('p-seuil-ponte'))||5,
+      stock: parseInt(val('p-seuil-stock'))||20,
+      mortalite: parseInt(val('p-seuil-mort'))||10,
+      rappelVaccin: parseInt(val('p-rappel-vac'))||7
+    },
+    couleur: val('p-couleur') || '#1D9E75',
+    batiments: (function(){
+      try{ var old = JSON.parse(localStorage.getItem('avi_params_v2')||'{}'); return old.batiments||{a:{},b:{},c:{}} }catch(e){ return {a:{},b:{},c:{}} }
+    })()
+  }
+
+  try{
+    localStorage.setItem('avi_params_v2', JSON.stringify(params))
+  }catch(e){
+    console.error('Erreur sauvegarde paramètres:', e)
+    return
+  }
+
+  var badge = document.getElementById('param-unsaved-badge')
+  if(badge) badge.style.display = 'none'
+
+  var lastSaved = document.getElementById('param-last-saved')
+  if(lastSaved) lastSaved.textContent = 'Sauvegardé à ' + new Date().toLocaleTimeString('fr-FR')
+
+  var toast = document.getElementById('param-toast')
+  if(toast){
+    toast.style.display = 'flex'
+    setTimeout(function(){ toast.style.display = 'none' }, 3000)
+  }
+
+  try{ if(typeof chargerAdminFerme==='function') chargerAdminFerme() }catch(e){}
+  try{ autosave() }catch(e){}
+}
+
+// ── Charger les paramètres sauvegardés dans les champs ─────────
+function chargerParametres(){
+  var params = null
+  try{ params = JSON.parse(localStorage.getItem('avi_params_v2')||'null') }catch(e){}
+  params = params || {}
+
+  function setVal(id, v){ var e=document.getElementById(id); if(e && v!==undefined && v!==null) e.value = v }
+
+  setVal('p-nom-ferme',      params.nomFerme)
+  setVal('p-raison-sociale', params.raisonSociale)
+  setVal('p-adresse',        params.adresse)
+  setVal('p-telephone',      params.telephone)
+  setVal('p-email',          params.email)
+  setVal('p-ninea',          params.ninea)
+
+  var pa = params.prixAliment || {}
+  setVal('p-dem-50',  pa.dem50)
+  setVal('p-pont-50', pa.pont50)
+
+  var s = params.seuils || {}
+  setVal('p-seuil-ponte', s.ponte)
+  setVal('p-seuil-stock', s.stock)
+  setVal('p-seuil-mort',  s.mortalite)
+  setVal('p-rappel-vac',  s.rappelVaccin)
+
+  if(params.couleur){
+    setVal('p-couleur', params.couleur)
+    setVal('p-couleur-hex', params.couleur)
+    document.documentElement.style.setProperty('--brand', params.couleur)
+  }
+
+  var badge = document.getElementById('param-unsaved-badge')
+  if(badge) badge.style.display = 'none'
+  var lastSaved = document.getElementById('param-last-saved')
+  if(lastSaved && params.nomFerme) lastSaved.textContent = 'Dernière sauvegarde chargée'
+}
+
 function ouvrirModalMouvement(){
   document.getElementById('mv-qte').value = ''
   document.getElementById('mv-cout').value = ''
@@ -6947,6 +7045,433 @@ function ouvrirModalSortieStock(){
   document.getElementById('modal-sortie-stock').classList.add('open')
 }
 
+// ════════════════════════════════════════════════════════════
+//  MODULE FINANCE — comptes, recettes, dépenses
+// ════════════════════════════════════════════════════════════
+var FIN = {
+  soldes: { caisse: 0, banque: 0, mobile: 0 },
+  banqueLabel: '',
+  operations: []   // {id,date,type:'recette'|'depense',cat,desc,compte,montant,resp}
+}
+
+function calcTotalFin(prefix){
+  var montant = parseFloat(document.getElementById(prefix+'-montant').value) || 0
+  var el = document.getElementById(prefix+'-total-preview')
+  if(el) el.textContent = montant>0 ? montant.toLocaleString('fr-FR')+' GNF' : ''
+}
+
+function ouvrirModalRecette(){
+  document.getElementById('rec-date').value = new Date().toISOString().split('T')[0]
+  document.getElementById('rec-desc').value = ''
+  document.getElementById('rec-montant').value = ''
+  document.getElementById('rec-total-preview').textContent = ''
+  document.getElementById('modal-recette').classList.add('open')
+}
+function ouvrirModalDepense(){
+  document.getElementById('dep-date').value = new Date().toISOString().split('T')[0]
+  document.getElementById('dep-desc').value = ''
+  document.getElementById('dep-montant').value = ''
+  document.getElementById('dep-total-preview').textContent = ''
+  document.getElementById('modal-depense').classList.add('open')
+}
+function ouvrirModalCompte(){
+  var nom = prompt('Nom du compte à ajouter (ex: Compte Ecobank) :')
+  if(!nom) return
+  var solde = parseFloat(prompt('Solde de départ (GNF) :', '0')) || 0
+  FIN.soldes[nom] = solde
+  rafraichirFinance()
+  try{ autosave() }catch(e){}
+}
+
+function enregistrerRecette(){
+  var desc = document.getElementById('rec-desc').value.trim()
+  var montant = parseFloat(document.getElementById('rec-montant').value) || 0
+  if(!desc || montant<=0){ alert('Renseigne une description et un montant valide.'); return }
+  var compte = document.getElementById('rec-compte').value
+  FIN.soldes[compte] = (FIN.soldes[compte]||0) + montant
+  FIN.operations.unshift({
+    id: Date.now(),
+    date: document.getElementById('rec-date').value,
+    type: 'recette',
+    cat: document.getElementById('rec-cat').value,
+    desc: desc,
+    compte: compte,
+    montant: montant,
+    resp: currentUser ? (currentUser.name||'') : 'Admin'
+  })
+  document.getElementById('modal-recette').classList.remove('open')
+  rafraichirFinance()
+  try{ autosave() }catch(e){}
+}
+
+function enregistrerDepense(){
+  var desc = document.getElementById('dep-desc').value.trim()
+  var montant = parseFloat(document.getElementById('dep-montant').value) || 0
+  if(!desc || montant<=0){ alert('Renseigne une description et un montant valide.'); return }
+  var compte = document.getElementById('dep-compte').value
+  FIN.soldes[compte] = (FIN.soldes[compte]||0) - montant
+  FIN.operations.unshift({
+    id: Date.now(),
+    date: document.getElementById('dep-date').value,
+    type: 'depense',
+    cat: document.getElementById('dep-cat').value,
+    desc: desc,
+    compte: compte,
+    montant: montant,
+    resp: currentUser ? (currentUser.name||'') : 'Admin'
+  })
+  document.getElementById('modal-depense').classList.remove('open')
+  rafraichirFinance()
+  try{ autosave() }catch(e){}
+}
+
+var FIN_FILTRE_TYPE = ''
+var FIN_FILTRE_CAT = ''
+function filtrerFinance(){
+  FIN_FILTRE_TYPE = (document.getElementById('fin-filtre-type')||{value:''}).value
+  FIN_FILTRE_CAT  = (document.getElementById('fin-filtre-cat')||{value:''}).value
+  rafraichirFinance()
+}
+
+var CAT_LABELS_FIN = {
+  vente_oeufs:'Vente œufs', vente_aliment:'Vente aliment', subvention:'Subvention', remboursement:'Remboursement',
+  aliment:'Achat aliment', salaire:'Salaires', carburant:'Carburant', veterinaire:'Vétérinaire',
+  materiel:'Matériel', electricite:'Électricité/Eau', autre:'Autre'
+}
+var COMPTE_LABELS_FIN = { caisse:'💵 Caisse', banque:'🏦 Banque', mobile:'📱 Mobile Money' }
+
+function rafraichirFinance(){
+  var mois=new Date().getMonth()+1, annee=new Date().getFullYear()
+  var opsMois = FIN.operations.filter(function(o){
+    if(!o.date) return false; var d=new Date(o.date); return d.getFullYear()===annee && d.getMonth()+1===mois
+  })
+  var recettesMois = opsMois.filter(function(o){return o.type==='recette'}).reduce(function(s,o){return s+o.montant},0)
+  var depensesMois = opsMois.filter(function(o){return o.type==='depense'}).reduce(function(s,o){return s+o.montant},0)
+  var totalSoldes = Object.keys(FIN.soldes).reduce(function(s,k){return s+(FIN.soldes[k]||0)},0)
+
+  function setEl(id,v){ var e=document.getElementById(id); if(e) e.textContent=v }
+  setEl('fin-tresor', totalSoldes.toLocaleString('fr-FR')+' GNF')
+  setEl('fin-recettes', recettesMois.toLocaleString('fr-FR')+' GNF')
+  setEl('fin-depenses', depensesMois.toLocaleString('fr-FR')+' GNF')
+  setEl('fin-benefice', (recettesMois-depensesMois).toLocaleString('fr-FR')+' GNF')
+
+  setEl('sol-caisse', (FIN.soldes.caisse||0).toLocaleString('fr-FR')+' GNF')
+  setEl('sol-banque', (FIN.soldes.banque||0).toLocaleString('fr-FR')+' GNF')
+  setEl('sol-mobile', (FIN.soldes.mobile||0).toLocaleString('fr-FR')+' GNF')
+  setEl('sol-total', totalSoldes.toLocaleString('fr-FR')+' GNF')
+
+  setEl('fin-nb-ops', FIN.operations.length+' opération(s)')
+
+  // Dernières opérations (les 5 plus récentes)
+  var opsList = document.getElementById('fin-ops-list')
+  if(opsList){
+    if(FIN.operations.length===0){
+      opsList.innerHTML = '<div style="text-align:center;padding:30px 10px;color:var(--gray-400)"><div style="font-size:28px;margin-bottom:6px">💰</div><div style="font-size:13px">Aucune opération — enregistrez<br>une recette ou une dépense</div></div>'
+    } else {
+      opsList.innerHTML = FIN.operations.slice(0,5).map(function(o){
+        var isRec = o.type==='recette'
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--gray-100)">'
+          +'<div><div style="font-size:12.5px;font-weight:600">'+o.desc+'</div><div style="font-size:10.5px;color:var(--gray-400)">'+o.date+' · '+(CAT_LABELS_FIN[o.cat]||o.cat)+'</div></div>'
+          +'<div style="font-weight:800;color:'+(isRec?'#10B981':'#EF4444')+'">'+(isRec?'+':'-')+o.montant.toLocaleString('fr-FR')+'</div>'
+          +'</div>'
+      }).join('')
+    }
+  }
+
+  // Historique complet filtré
+  var tbody = document.getElementById('fin-historique-tbody')
+  if(tbody){
+    var ops = FIN.operations.filter(function(o){
+      if(FIN_FILTRE_TYPE && o.type!==FIN_FILTRE_TYPE) return false
+      if(FIN_FILTRE_CAT && o.cat!==FIN_FILTRE_CAT) return false
+      return true
+    })
+    if(ops.length===0){
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:20px">Aucune opération financière — enregistrez votre première recette ou dépense</td></tr>'
+    } else {
+      tbody.innerHTML = ops.map(function(o){
+        var isRec = o.type==='recette'
+        return '<tr>'
+          +'<td>'+o.date+'</td>'
+          +'<td><span class="badge '+(isRec?'b-green':'b-red')+'" style="font-size:10px">'+(isRec?'Recette':'Dépense')+'</span></td>'
+          +'<td style="font-size:12px;color:var(--gray-500)">'+(CAT_LABELS_FIN[o.cat]||o.cat)+'</td>'
+          +'<td style="font-size:12.5px">'+o.desc+'</td>'
+          +'<td style="font-size:12px">'+(COMPTE_LABELS_FIN[o.compte]||o.compte)+'</td>'
+          +'<td style="font-weight:700;color:'+(isRec?'#10B981':'#EF4444')+'">'+(isRec?'+':'-')+o.montant.toLocaleString('fr-FR')+'</td>'
+          +'<td style="font-size:12px">'+o.resp+'</td>'
+          +'</tr>'
+      }).join('')
+    }
+  }
+}
+
+function exporterFinanceCSV(){
+  var rows = ['Date,Type,Catégorie,Description,Compte,Montant,Responsable']
+  FIN.operations.forEach(function(o){
+    rows.push([o.date||'',o.type,(CAT_LABELS_FIN[o.cat]||o.cat),'"'+(o.desc||'')+'"',(COMPTE_LABELS_FIN[o.compte]||o.compte),o.montant||0,'"'+(o.resp||'')+'"'].join(','))
+  })
+  _dlBlob('\uFEFF'+rows.join('\n'), 'finance-'+new Date().toISOString().split('T')[0]+'.csv', 'text/csv;charset=utf-8')
+}
+
+function exporterFinancePDF(){
+  var totalSoldes = Object.keys(FIN.soldes).reduce(function(s,k){return s+(FIN.soldes[k]||0)},0)
+  var recettes = FIN.operations.filter(function(o){return o.type==='recette'}).reduce(function(s,o){return s+o.montant},0)
+  var depenses = FIN.operations.filter(function(o){return o.type==='depense'}).reduce(function(s,o){return s+o.montant},0)
+  var lignes = FIN.operations.slice(0,40).map(function(o,i){
+    var isRec = o.type==='recette'
+    var bg=i%2===0?'#FFF':'#F9FAFB'
+    return '<tr style="background:'+bg+'"><td>'+o.date+'</td><td>'+(isRec?'Recette':'Dépense')+'</td>'
+      +'<td>'+(CAT_LABELS_FIN[o.cat]||o.cat)+'</td><td>'+o.desc+'</td>'
+      +'<td style="text-align:right;color:'+(isRec?'#059669':'#DC2626')+'">'+(isRec?'+':'-')+o.montant.toLocaleString('fr-FR')+' GNF</td></tr>'
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:#9CA3AF">Aucune opération enregistrée</td></tr>'
+
+  var html = _pdfHead('💰 Rapport Financier','Trésorerie, recettes et dépenses', '#1D9E75')
+  +'<div style="margin-bottom:16px">'
+  +'<div class="kpi"><div class="kpi-l">Trésorerie totale</div><div class="kpi-v">'+totalSoldes.toLocaleString('fr-FR')+' GNF</div></div>'
+  +'<div class="kpi"><div class="kpi-l">Recettes</div><div class="kpi-v">'+recettes.toLocaleString('fr-FR')+' GNF</div></div>'
+  +'<div class="kpi"><div class="kpi-l">Dépenses</div><div class="kpi-v">'+depenses.toLocaleString('fr-FR')+' GNF</div></div>'
+  +'</div>'
+  +'<div class="sec">📋 Opérations ('+FIN.operations.length+')</div>'
+  +'<table><thead><tr><th>Date</th><th>Type</th><th>Catégorie</th><th>Description</th><th style="text-align:right">Montant</th></tr></thead><tbody>'+lignes+'</tbody></table>'
+  +_pdfFoot()
+  _openPDF(html)
+}
+
+// ── Ouvrir les modals Logistique ────────────────────────────────
+function ouvrirModalVoyage(){
+  document.getElementById('voy-date').value = new Date().toISOString().split('T')[0]
+  document.getElementById('voy-dest').value = ''
+  document.getElementById('voy-km').value = LOG.kmActuel || ''
+  document.getElementById('voy-litres').value = ''
+  document.getElementById('voy-cout').value = ''
+  document.getElementById('voy-notes').value = ''
+  document.getElementById('modal-voyage').classList.add('open')
+}
+function ouvrirModalRecu(){
+  document.getElementById('recu-date').value = new Date().toISOString().split('T')[0]
+  document.getElementById('recu-station').value = ''
+  document.getElementById('recu-litres').value = ''
+  document.getElementById('recu-prix-litre').value = ''
+  document.getElementById('recu-montant').value = ''
+  document.getElementById('recu-notes').value = ''
+  document.getElementById('modal-recu').classList.add('open')
+}
+function ouvrirModalPanne(){
+  document.getElementById('panne-date').value = new Date().toISOString().split('T')[0]
+  document.getElementById('panne-type').value = ''
+  document.getElementById('panne-desc').value = ''
+  document.getElementById('panne-lieu').value = ''
+  document.getElementById('panne-cout').value = ''
+  document.getElementById('modal-panne').classList.add('open')
+}
+
+function enregistrerVoyage(){
+  var dest = document.getElementById('voy-dest').value.trim()
+  if(!dest){ alert('Renseigne la destination / le motif.'); return }
+  var km = parseInt(document.getElementById('voy-km').value) || LOG.kmActuel || 0
+  var voyage = {
+    date: document.getElementById('voy-date').value,
+    type: document.getElementById('voy-type').value,
+    dest: dest,
+    chauffeur: document.getElementById('voy-conducteur').value,
+    kmDep: LOG.kmActuel || 0,
+    kmArr: km,
+    litres: parseFloat(document.getElementById('voy-litres').value) || 0,
+    cout: parseFloat(document.getElementById('voy-cout').value) || 0,
+    notes: document.getElementById('voy-notes').value.trim()
+  }
+  LOG.voyages.unshift(voyage)
+  LOG.kmActuel = km
+  LOG.voyTotal = (LOG.voyTotal||0) + 1
+  LOG.voyDepuis = (LOG.voyDepuis||0) + 1
+  document.getElementById('modal-voyage').classList.remove('open')
+  rafraichirLogistique()
+  try{ autosave() }catch(e){}
+}
+
+function enregistrerPanne(){
+  var desc = document.getElementById('panne-desc').value.trim()
+  var type = document.getElementById('panne-type').value
+  if(!desc || !type){ alert('Renseigne le type et la description de la panne.'); return }
+  LOG.pannes.unshift({
+    date: document.getElementById('panne-date').value,
+    gravite: document.getElementById('panne-gravite').value,
+    type: type,
+    desc: desc,
+    lieu: document.getElementById('panne-lieu').value.trim(),
+    par: document.getElementById('panne-par').value,
+    cout: parseFloat(document.getElementById('panne-cout').value) || 0,
+    statut: 'en_cours'
+  })
+  document.getElementById('modal-panne').classList.remove('open')
+  rafraichirLogistique()
+  try{ autosave() }catch(e){}
+}
+
+function confirmerVidange(){
+  if(!confirm('Confirmer que la vidange vient d\'être effectuée ? Le compteur de voyages sera remis à zéro.')) return
+  LOG.voyDepuis = 0
+  LOG.dateVidange = new Date().toISOString().split('T')[0]
+  rafraichirLogistique()
+  try{ autosave() }catch(e){}
+}
+
+function majSeuilVidange(){
+  var v = parseInt(document.getElementById('log-seuil-input').value) || 50
+  LOG.seuil = v
+  rafraichirLogistique()
+  try{ autosave() }catch(e){}
+}
+
+// ── Rafraîchir la page Logistique ───────────────────────────────
+function rafraichirLogistique(){
+  function setEl(id,v){ var e=document.getElementById(id); if(e) e.textContent=v }
+  var mois=new Date().getMonth()+1, annee=new Date().getFullYear()
+
+  setEl('log-voy-total', LOG.voyTotal||0)
+  setEl('log-voy-depuis', LOG.voyDepuis||0)
+  setEl('log-km', (LOG.kmActuel||0).toLocaleString('fr-FR')+' km')
+  setEl('log-date-vidange', LOG.dateVidange || '—')
+
+  var coutMois = (LOG.recus||[]).filter(function(r){
+    if(!r.date) return false; var d=new Date(r.date); return d.getFullYear()===annee && d.getMonth()+1===mois
+  }).reduce(function(s,r){return s+(r.montant||0)},0)
+  setEl('log-cout-carbu', coutMois.toLocaleString('fr-FR')+' GNF')
+
+  var pannesActives = (LOG.pannes||[]).filter(function(p){return p.statut!=='resolu'})
+  setEl('log-pannes-actives', pannesActives.length)
+  var badgeGolf = document.getElementById('golf-statut-badge')
+  if(badgeGolf){
+    if(pannesActives.length>0){ badgeGolf.className='badge b-red'; badgeGolf.textContent='⚠️ En panne' }
+    else { badgeGolf.className='badge b-green'; badgeGolf.textContent='✅ Opérationnel' }
+  }
+
+  // Barre de vidange
+  var seuil = LOG.seuil || 50
+  var pct = Math.min(100, Math.round(((LOG.voyDepuis||0)/seuil)*100))
+  setEl('log-barre-txt', (LOG.voyDepuis||0)+' / '+seuil+' voyages')
+  var fill = document.getElementById('log-barre-fill')
+  if(fill){
+    fill.style.width = pct+'%'
+    fill.style.background = pct>=90 ? 'linear-gradient(90deg,#EF4444,#F87171)' : pct>=70 ? 'linear-gradient(90deg,#F59E0B,#FBBF24)' : 'linear-gradient(90deg,#10B981,#34D399)'
+  }
+  setEl('log-vidange-msg', pct>=100 ? '⚠️ Vidange à faire dès maintenant !' : 'Prochaine vidange dans '+(seuil-(LOG.voyDepuis||0))+' voyages')
+
+  // Pannes list
+  var pannesList = document.getElementById('log-pannes-list')
+  if(pannesList){
+    if((LOG.pannes||[]).length===0){
+      pannesList.innerHTML = '<div style="text-align:center;padding:30px 10px;color:var(--gray-400)"><div style="font-size:28px;margin-bottom:6px">✅</div><div style="font-size:13px">Aucune panne enregistrée</div></div>'
+    } else {
+      pannesList.innerHTML = LOG.pannes.slice(0,5).map(function(p){
+        var g = p.gravite==='grave' ? '🔴' : p.gravite==='moyenne' ? '🟠' : '🟡'
+        return '<div style="padding:8px 0;border-bottom:1px solid var(--gray-100)">'
+          +'<div style="font-size:12.5px;font-weight:600">'+g+' '+p.desc+'</div>'
+          +'<div style="font-size:10.5px;color:var(--gray-400)">'+p.date+' · '+(p.lieu||'—')+'</div>'
+          +'</div>'
+      }).join('')
+    }
+  }
+
+  // Reçus carburant
+  var recusList = document.getElementById('log-recus-list')
+  if(recusList){
+    if((LOG.recus||[]).length===0){
+      recusList.innerHTML = '<div style="text-align:center;padding:20px 10px;color:var(--gray-400);font-size:13px">Aucun reçu enregistré</div>'
+    } else {
+      recusList.innerHTML = LOG.recus.slice(0,5).map(function(r){
+        return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--gray-100);font-size:12.5px">'
+          +'<span>'+r.date+' · '+(r.station||'—')+' · '+r.litres+'L</span>'
+          +'<strong>'+(r.montant||0).toLocaleString('fr-FR')+' GNF</strong>'
+          +'</div>'
+      }).join('')
+    }
+  }
+
+  // Derniers voyages
+  var voyList = document.getElementById('log-voyages-list')
+  var badgeVoy = document.getElementById('log-nb-voyages-badge')
+  if(badgeVoy) badgeVoy.textContent = (LOG.voyages||[]).length+' voyage(s)'
+  if(voyList){
+    if((LOG.voyages||[]).length===0){
+      voyList.innerHTML = '<div style="text-align:center;padding:20px 10px;color:var(--gray-400);font-size:13px">Aucun voyage enregistré</div>'
+    } else {
+      voyList.innerHTML = LOG.voyages.slice(0,5).map(function(v){
+        return '<div style="padding:7px 0;border-bottom:1px solid var(--gray-100);font-size:12.5px">'
+          +'<div style="font-weight:600">'+v.dest+'</div>'
+          +'<div style="color:var(--gray-400);font-size:10.5px">'+v.date+' · '+(v.chauffeur||'—')+'</div>'
+          +'</div>'
+      }).join('')
+    }
+  }
+
+  // Historique complet
+  var tbody = document.getElementById('log-historique-tbody')
+  if(tbody){
+    var lignes = []
+    ;(LOG.voyages||[]).forEach(function(v){
+      lignes.push({date:v.date, type:'🚗 Voyage', desc:v.dest, km:(v.kmArr-v.kmDep)+' km', cout:v.cout, resp:v.chauffeur, statut:'Terminé', ts:new Date(v.date).getTime()||0})
+    })
+    ;(LOG.recus||[]).forEach(function(r){
+      lignes.push({date:r.date, type:'⛽ Carburant', desc:r.station, km:r.litres+'L', cout:r.montant, resp:'', statut:'Payé', ts:new Date(r.date).getTime()||0})
+    })
+    ;(LOG.pannes||[]).forEach(function(p){
+      lignes.push({date:p.date, type:'⚠️ Panne', desc:p.desc, km:'—', cout:p.cout, resp:p.par, statut:p.statut==='resolu'?'Résolu':'En cours', ts:new Date(p.date).getTime()||0})
+    })
+    lignes.sort(function(a,b){return b.ts-a.ts})
+    if(lignes.length===0){
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:16px">Aucune opération — enregistrez un voyage ou un reçu</td></tr>'
+    } else {
+      tbody.innerHTML = lignes.map(function(l){
+        return '<tr>'
+          +'<td>'+l.date+'</td>'
+          +'<td>'+l.type+'</td>'
+          +'<td style="font-size:12.5px">'+l.desc+'</td>'
+          +'<td style="font-size:12px">'+l.km+'</td>'
+          +'<td style="font-weight:700">'+(l.cout?l.cout.toLocaleString('fr-FR')+' GNF':'—')+'</td>'
+          +'<td style="font-size:12px">'+l.resp+'</td>'
+          +'<td><span class="badge b-green" style="font-size:10px">'+l.statut+'</span></td>'
+          +'</tr>'
+      }).join('')
+    }
+  }
+}
+
+// ── Réinitialiser les paramètres aux valeurs par défaut ─────────
+function reinitialiserParametres(){
+  if(!confirm('Réinitialiser tous les paramètres aux valeurs par défaut ?')) return
+  try{ localStorage.removeItem('avi_params_v2') }catch(e){}
+  chargerParametres()
+  marquerModifications()
+}
+
+// ── Réinitialiser uniquement la couleur de marque ───────────────
+function reinitCouleur(){
+  var defaut = '#1D9E75'
+  document.documentElement.style.setProperty('--brand', defaut)
+  var picker = document.getElementById('p-couleur'); if(picker) picker.value = defaut
+  var hex = document.getElementById('p-couleur-hex'); if(hex) hex.value = defaut
+  marquerModifications()
+}
+
+// ── Exporter les paramètres en JSON ──────────────────────────────
+function exporterParametres(){
+  var params = null
+  try{ params = JSON.parse(localStorage.getItem('avi_params_v2')||'{}') }catch(e){ params = {} }
+  _dlBlob(JSON.stringify(params, null, 2), 'parametres-'+new Date().toISOString().split('T')[0]+'.json', 'application/json')
+}
+
+// ── Valider une section individuelle (Paramètres) ────────────────
+function validerSection(section){
+  try{ sauvegarderParametres() }catch(e){}
+  var btn = event && event.target
+  if(btn){
+    var texteOriginal = btn.textContent
+    btn.textContent = '✅ Enregistré'
+    setTimeout(function(){ btn.textContent = texteOriginal }, 1500)
+  }
+}
+
 function ouvrirModalMouvement(){ ouvrirModalEntreeStock() }
 
 // ── Raccourcis depuis la page Production ──────────────────
@@ -7162,12 +7687,11 @@ var PDV_ACTIF = null       // PDV sélectionné dans le POS
 // Catalogue complet des produits POS
 var POS_CATALOGUE = [
   { id:'b30',   nom:'Barquette 30 œufs',        prix:1800,  unite:'u',   cat:'oeufs'   },
+  { id:'alv',   nom:'Alvéole œufs',             prix:1800,  unite:'u',   cat:'oeufs'   },
   { id:'poul',  nom:'Poulet réforme',            prix:4500,  unite:'u',   cat:'autres'  },
   { id:'fient', nom:'Fiente séchée',             prix:1500,  unite:'sac', cat:'autres'  },
   { id:'ad50',  nom:'Aliment Démarrage 50 kg',   prix:16000, unite:'sac', cat:'aliment' },
-  { id:'ad10',  nom:'Aliment Démarrage 10 kg',   prix:3400,  unite:'sac', cat:'aliment' },
   { id:'ap50',  nom:'Aliment Ponte 50 kg',       prix:18000, unite:'sac', cat:'aliment' },
-  { id:'ap10',  nom:'Aliment Ponte 10 kg',       prix:3900,  unite:'sac', cat:'aliment' },
 ]
 
 // ── Ouvrir modal création / modification ─────────────────────
@@ -7326,7 +7850,7 @@ function reconstruireCataloguePOS(){
     if(prods.indexOf(p.id)<0) return
     if(p.id.indexOf('ad')===0) cats.dem.push(p)
     else if(p.id.indexOf('ap')===0) cats.pont.push(p)
-    else if(['b30','poul'].indexOf(p.id)>=0) cats.oeufs.push(p)
+    else if(['b30','alv','poul'].indexOf(p.id)>=0) cats.oeufs.push(p)
     else cats.autres.push(p)
   })
 
@@ -9108,8 +9632,8 @@ function enregistrerRecu(){
   var montant = parseInt((document.getElementById('recu-montant')||{}).value)||0
   if(!date||!litres){ alert('Date et litres obligatoires.'); return }
   if(typeof LOG !== 'undefined'){
-    if(!LOG.carburant) LOG.carburant=[]
-    LOG.carburant.unshift({
+    if(!LOG.recus) LOG.recus=[]
+    LOG.recus.unshift({
       date:date, litres:litres, montant:montant,
       station:(document.getElementById('recu-station')||{}).value||'',
       notes:(document.getElementById('recu-notes')||{}).value||''
@@ -9372,7 +9896,7 @@ function exporterProductionPDF(){
 // ════════════════════════════════════════════════════════════════
 function exporterAlimentCSV(){
   var prods = ALIMENT.productions||[], distribs = ALIMENT.distributions||[], ventes = ALIMENT.ventes||[]
-  var rows = ['=== PRODUCTIONS ===','Date,Type,Lot,Sacs 50kg,Sacs 25kg,Sacs 10kg,Total sacs,Total kg,Coût (GNF)']
+  var rows = ['=== PRODUCTIONS ===','Date,Type,Lot,Sacs 50kg,Total sacs,Total kg,Coût (GNF)']
   prods.forEach(function(p){
     rows.push([p.date||'',p.type||'',p.lot||'',p.q50||0,p.q25||0,p.q10||0,p.totalSacs||0,p.totalKg||0,p.cout||0].join(','))
   })
@@ -9425,7 +9949,7 @@ function exporterAlimentPDF(){
   var html = _pdfHead('🌾 Rapport Aliment','Productions · Distributions · Ventes externes', couleur)
   // Stock actuel
   +'<div class="sec">📦 Stock actuel</div>'
-  +'<table><thead><tr><th>Type</th><th>Sacs 50kg</th><th>Sacs 25kg</th><th>Sacs 10kg</th><th style="text-align:right">Total sacs</th><th style="text-align:right">Total kg</th></tr></thead><tbody>'
+  +'<table><thead><tr><th>Type</th><th>Sacs 50kg</th><th style="text-align:right">Total sacs</th><th style="text-align:right">Total kg</th></tr></thead><tbody>'
   +'<tr style="background:#FFFBEB"><td style="font-weight:700">🌱 Démarrage</td><td>'+sd.s50+'</td><td>'+sd.s25+'</td><td>'+sd.s10+'</td><td style="font-weight:700;text-align:right">'+totSacsDem+' sacs</td><td style="text-align:right">'+totKgDem.toLocaleString('fr-FR')+' kg</td></tr>'
   +'<tr style="background:#F0FDF4"><td style="font-weight:700">🥚 Ponte</td><td>'+sp.s50+'</td><td>'+sp.s25+'</td><td>'+sp.s10+'</td><td style="font-weight:700;text-align:right">'+totSacsPont+' sacs</td><td style="text-align:right">'+totKgPont.toLocaleString('fr-FR')+' kg</td></tr>'
   +'<tr style="background:#F3F4F6;font-weight:700"><td>TOTAL</td><td colspan="3"></td><td style="text-align:right">'+(totSacsDem+totSacsPont)+' sacs</td><td style="text-align:right">'+(totKgDem+totKgPont).toLocaleString('fr-FR')+' kg</td></tr>'
