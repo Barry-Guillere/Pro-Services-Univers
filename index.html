@@ -6063,6 +6063,11 @@ function genRef(prefix){
 // ══════════════════════════════════════════════════════════════
 //  MODAL PRODUCTION — BON DE FABRICATION
 // ══════════════════════════════════════════════════════════════
+var PRODUCTION = {
+  bons:     [],   // bons de fabrication
+  matieres: []    // entrées matières premières
+}
+
 var FORMULES = {
   ponte: {
     nom: 'Aliment Ponte (formule complète)',
@@ -6814,6 +6819,33 @@ function rafraichirProduction(){
   }
 }
 
+// ════════════════════════════════════════════════════════
+//  MODULE STOCK
+//  Matières premières · Emballages · Produits finis
+// ════════════════════════════════════════════════════════
+
+// Catalogue complet des produits avec seuils d'alerte
+var STOCK_CATALOGUE = [
+  // ── Production d'œufs (par bâtiment) ─────────────────
+  { id:'oeuf_bloc_a',    nom:'Œufs — Bâtiment A',        cat:'oeufs',      unite:'alvéole', seuil:50,  prix:0 },
+  { id:'oeuf_bloc_b',    nom:'Œufs — Bâtiment B',        cat:'oeufs',      unite:'alvéole', seuil:50,  prix:0 },
+  { id:'oeuf_bloc_c',    nom:'Œufs — Bâtiment C',        cat:'oeufs',      unite:'alvéole', seuil:50,  prix:0 },
+  // ── Aliment ───────────────────────────────────────────
+  { id:'alim_demarrage', nom:'Aliment Démarrage',    cat:'aliment',    unite:'sac',     seuil:10,  prix:0 },
+  { id:'alim_croissance',nom:'Aliment Croissance',   cat:'aliment',    unite:'sac',     seuil:10,  prix:0 },
+  { id:'alim_ponte',     nom:'Aliment Ponte',        cat:'aliment',    unite:'sac',     seuil:10,  prix:0 },
+  // ── Barquettes ────────────────────────────────────────
+  { id:'barquettes',     nom:'Barquettes',           cat:'barquettes', unite:'paquet',  seuil:20,  prix:0 },
+]
+
+// État du stock : { id: { qte, prix_moyen } }
+var STOCK_QTE = {}
+var STOCK_MOUVEMENTS = []
+var STOCK_FILTRE = 'tous'
+
+// Initialiser les quantités à 0
+STOCK_CATALOGUE.forEach(function(p){ STOCK_QTE[p.id] = { qte:0, prix_moyen:0 } })
+
 function majUniteStock(sens){
   var selId = 'stk-'+(sens==='in'?'in':'out')+'-produit'
   var uniteId = 'stk-'+(sens==='in'?'in':'out')+'-unite'
@@ -7517,6 +7549,11 @@ function rafraichirStock(){
     }
   }
 }
+
+// ════════════════════════════════════════════════════════════
+//  MODULE POINTS DE VENTE
+// ════════════════════════════════════════════════════════════
+var POINTS_DE_VENTE = []
 
 function ouvrirModalCreerPDV(idEdit){
   var el = function(id){ return document.getElementById(id) }
