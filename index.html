@@ -4588,37 +4588,37 @@ function syncToSupabase(data){
   var c = getCloudConfig()
 
   var financeOps = (data.FIN_operations||[]).map(function(o){
-    return {id:o.id, date:o.date, type:o.type, categorie:o.cat, description:o.desc, compte:o.compte, montant:o.montant, responsable:o.resp}
+    return {id:o.id, date:o.date||'', type:o.type||'', categorie:o.cat||'', description:o.desc||'', compte:o.compte||'', montant:o.montant||0, responsable:o.resp||''}
   })
   var financeSoldes = Object.keys(data.FIN_soldes||{}).map(function(k){
-    return {compte:k, montant:data.FIN_soldes[k]}
+    return {compte:k, montant:data.FIN_soldes[k]||0}
   })
   var stockQte = Object.keys(data.STOCK_QTE||{}).map(function(k){
     return {produit_id:k, quantite:(data.STOCK_QTE[k]||{}).qte||0, prix_moyen:(data.STOCK_QTE[k]||{}).prix_moyen||0}
   })
   var stockMvts = (data.STOCK_MOUVEMENTS||[]).map(function(m){
-    return {id:m.id, date:m.date, produit_id:m.prodId, produit_nom:m.prodNom, type:m.type, quantite:m.qte, unite:m.unite, prix:m.prix, total:m.total, motif:m.motif, batiment:m.bloc||'', responsable:m.resp}
+    return {id:m.id, date:m.date||'', produit_id:m.prodId||'', produit_nom:m.prodNom||'', type:m.type||'', quantite:m.qte||0, unite:m.unite||'', prix:m.prix||0, total:m.total||0, motif:m.motif||'', batiment:m.bloc||'', responsable:m.resp||''}
   })
   var clients = (data.COMMERCE_clients||[]).map(function(cl){
-    return {id:cl.id, nom:cl.nom, type:cl.type, telephone:cl.tel, email:cl.email, adresse:cl.adresse, delai_paiement:cl.credit?30:30, plafond_credit:cl.credit||0, solde:cl.solde}
+    return {id:cl.id, nom:cl.nom||'', type:cl.type||'', telephone:cl.tel||'', email:cl.email||'', adresse:cl.adresse||'', delai_paiement:30, plafond_credit:cl.credit||0, solde:cl.solde||0}
   })
   var factures = (data.COMMERCE_factures||[]).map(function(f){
-    return {id:f.id, numero:f.num, date:f.date, client_id:f.clientId, client_nom:f.clientNom, articles:f.articles||[], total:f.total, acompte:f.acompte, solde:f.solde, paiement:f.paiement, statut:f.statut}
+    return {id:f.id, numero:f.num||'', date:f.date||'', client_id:f.clientId||'', client_nom:f.clientNom||'', articles:f.articles||[], total:f.total||0, acompte:f.acompte||0, solde:f.solde||0, paiement:f.paiement||'', statut:f.statut||''}
   })
   var pdv = (data.POINTS_DE_VENTE||[]).map(function(p){
-    return {id:p.id, nom:p.nom, zone:p.zone, adresse:p.adresse, gerant_select:p.gerantSelect, gerant_nom:p.gerantNom, gerant_tel:p.gerantTel, commission:p.commission, produits:p.produits||[], stock:p.stock||{}, ventes:p.ventes||[], ca:p.ca||0, statut:p.statut, date_creation:p.dateCreation}
+    return {id:p.id, nom:p.nom||'', zone:p.zone||'', adresse:p.adresse||'', gerant_select:p.gerantSelect||'', gerant_nom:p.gerantNom||'', gerant_tel:p.gerantTel||'', commission:p.commission||'', produits:p.produits||[], stock:p.stock||{}, ventes:p.ventes||[], ca:p.ca||0, statut:p.statut||'', date_creation:p.dateCreation||null}
   })
   var voyages = (data.LOG_voyages||[]).map(function(v){
-    return {id:v.id, date:v.date, type:v.type, destination:v.dest, chauffeur:v.chauffeur, km_depart:v.kmDep, km_arrivee:v.kmArr, litres:v.litres, cout:v.cout, notes:v.notes}
+    return {id:v.id, date:v.date||'', type:v.type||'', destination:v.dest||'', chauffeur:v.chauffeur||'', km_depart:v.kmDep||0, km_arrivee:v.kmArr||0, litres:v.litres||0, cout:v.cout||0, notes:v.notes||''}
   })
   var recus = (data.LOG_recus||[]).map(function(r){
-    return {id:r.id, date:r.date, litres:r.litres, montant:r.montant, station:r.station, notes:r.notes}
+    return {id:r.id, date:r.date||'', litres:r.litres||0, montant:r.montant||0, station:r.station||'', notes:r.notes||''}
   })
   var pannes = (data.LOG_pannes||[]).map(function(p){
-    return {id:p.id, date:p.date, gravite:p.gravite, type:p.type, description:p.desc, lieu:p.lieu, signale_par:p.par, cout:p.cout, statut:p.statut}
+    return {id:p.id, date:p.date||'', gravite:p.gravite||'', type:p.type||'', description:p.desc||'', lieu:p.lieu||'', signale_par:p.par||'', cout:p.cout||0, statut:p.statut||''}
   })
   var santeEvts = (data.SANTE_EVENTS||[]).map(function(e){
-    return {id:e.id, date:e.date, type:e.type, gravite:e.gravite, description:e.desc, batiment:e.bloc, responsable:e.resp}
+    return {id:e.id, date:e.date||'', type:e.type||'', gravite:e.gravite||'', description:e.desc||'', batiment:e.bloc||'', responsable:e.resp||''}
   })
 
   Promise.all([
