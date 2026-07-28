@@ -2116,7 +2116,7 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
    </div><!-- /page-ai -->
 
    <!-- ═══ ADMIN ═══ -->
-   <div class="page" id="page-admin">
+   <div class="page" id="page-admin" style="max-width:1300px;margin:0 auto;padding-top:10px">
   <div class="page-header">
     <div>
       <div class="page-title">👥 Administration</div>
@@ -4651,10 +4651,26 @@ function _cloudFetch(c, table, select){
 
 // ── Fusionne les données reçues du serveur avec les données locales,
 //    sans jamais perdre un élément saisi localement mais pas encore envoyé ──
+// ── Extrait un horodatage approximatif depuis un identifiant ─────
+//    (ex: 1735699200000, ou "CLI-1735699200000-4521")
+function _idVersHorodatage(id){
+  if(id===undefined || id===null) return 0
+  var m = String(id).match(/(\d{10,})/)
+  return m ? parseInt(m[1]) : 0
+}
+
 function _fusionnerParId(local, remote){
   var vusIds = {}
   remote.forEach(function(r){ if(r && r.id!==undefined) vusIds[r.id]=true })
-  var localNonEnvoyes = (local||[]).filter(function(l){ return l && l.id!==undefined && !vusIds[l.id] })
+  var maintenant = Date.now()
+  var SEUIL_RECENT = 2*60*1000  // 2 minutes : au-delà, on considère que l'élément a eu le temps d'être envoyé
+  var localNonEnvoyes = (local||[]).filter(function(l){
+    if(!l || l.id===undefined || vusIds[l.id]) return false
+    var age = maintenant - _idVersHorodatage(l.id)
+    // Élément récent et absent du serveur → probablement pas encore envoyé, on le garde
+    // Élément ancien et absent du serveur → probablement supprimé côté serveur, on le retire
+    return age >= 0 && age < SEUIL_RECENT
+  })
   return remote.concat(localNonEnvoyes)
 }
 
