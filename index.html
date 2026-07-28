@@ -4573,7 +4573,13 @@ function _cloudUpsert(c, table, rows, onConflict){
       'Prefer': 'resolution=merge-duplicates,return=minimal'
     },
     body: JSON.stringify(rows)
-  }).then(function(r){ if(!r.ok) throw new Error(table+' : HTTP '+r.status) })
+  }).then(function(r){
+    if(!r.ok){
+      return r.text().then(function(txt){
+        throw new Error(table+' : HTTP '+r.status+' — '+txt)
+      })
+    }
+  })
 }
 
 // ── Envoi (push) — appelé automatiquement à chaque autosave() ──
@@ -4594,7 +4600,7 @@ function syncToSupabase(data){
     return {id:m.id, date:m.date, produit_id:m.prodId, produit_nom:m.prodNom, type:m.type, quantite:m.qte, unite:m.unite, prix:m.prix, total:m.total, motif:m.motif, batiment:m.bloc||'', responsable:m.resp}
   })
   var clients = (data.COMMERCE_clients||[]).map(function(cl){
-    return {id:cl.id, nom:cl.nom, type:cl.type, telephone:cl.tel, email:cl.email, adresse:cl.adresse, delai_paiement:cl.delai, plafond_credit:cl.plafond, solde:cl.solde}
+    return {id:cl.id, nom:cl.nom, type:cl.type, telephone:cl.tel, email:cl.email, adresse:cl.adresse, delai_paiement:cl.credit?30:30, plafond_credit:cl.credit||0, solde:cl.solde}
   })
   var factures = (data.COMMERCE_factures||[]).map(function(f){
     return {id:f.id, numero:f.num, date:f.date, client_id:f.clientId, client_nom:f.clientNom, articles:f.articles||[], total:f.total, acompte:f.acompte, solde:f.solde, paiement:f.paiement, statut:f.statut}
