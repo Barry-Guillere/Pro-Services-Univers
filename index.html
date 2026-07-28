@@ -2282,16 +2282,7 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
         <summary style="font-size:11.5px;color:var(--blue);cursor:pointer;font-weight:600">Comment créer le projet Supabase (2 minutes) ?</summary>
         <div style="font-size:11.5px;color:var(--gray-600);line-height:1.8;margin-top:8px;padding:10px;background:var(--gray-100);border-radius:8px">
           1. Va sur <a href="https://supabase.com" target="_blank" style="color:var(--blue)">supabase.com</a> → crée un compte gratuit → "New project".<br>
-          2. Une fois le projet créé, va dans <strong>SQL Editor → New query</strong> et colle ceci puis clique "Run" :<br>
-          <code style="display:block;background:#0F172A;color:#93F7C0;padding:8px;border-radius:6px;margin:6px 0;white-space:pre-wrap;font-size:10.5px">create table if not exists avidata (
-  id text primary key,
-  data jsonb,
-  updated_at timestamptz default now()
-);
-alter table avidata enable row level security;
-create policy "lecture" on avidata for select using (true);
-create policy "ecriture" on avidata for insert with check (true);
-create policy "maj" on avidata for update using (true);</code>
+          2. Une fois le projet créé, va dans <strong>SQL Editor → New query</strong>, colle le contenu du fichier <strong>schema_supabase.sql</strong> (fourni séparément — une table par module : Finance, Stock, Commerce, Logistique, Points de vente, Sanitaire, Paramètres) puis clique "Run".<br>
           3. Va dans <strong>Project Settings → API Keys</strong> : copie <strong>"Project URL"</strong> (dans Overview) et la <strong>"Publishable key"</strong> (anciennement "anon public").<br>
           4. Colle-les ci-dessus et clique "Connecter". Fais pareil sur chaque poste/navigateur utilisé par l'équipe.
         </div>
@@ -4534,7 +4525,7 @@ function sauvegarderConfigCloud(){
 function testerConnexionCloud(cb){
   var c = getCloudConfig()
   if(!c.url || !c.key){ setCloudStatus('off',"⚠️ Configure d'abord l'URL et la clé."); if(cb) cb(false); return }
-  fetch(c.url+'/rest/v1/avidata?id=eq.'+CLOUD_ROW_ID+'&select=id', {
+  fetch(c.url+'/rest/v1/parametres?id=eq.principal&select=id', {
     headers: { 'apikey': c.key, 'Authorization': 'Bearer '+c.key }
   }).then(function(r){
     if(!r.ok) throw new Error('HTTP '+r.status)
@@ -4543,55 +4534,147 @@ function testerConnexionCloud(cb){
     setCloudStatus('ok', '✅ Connexion réussie.')
     if(cb) cb(true)
   }).catch(function(err){
-    setCloudStatus('error', "❌ Échec : "+err.message+" (vérifie l'URL, la clé, et que la table avidata a bien été créée).")
+    setCloudStatus('error', "❌ Échec : "+err.message+" (vérifie l'URL, la clé, et que les tables ont bien été créées).")
     if(cb) cb(false)
   })
+}
+
+// ── Envoi (push) — une requête par table, avec upsert sur id ──
+function _cloudUpsert(c, table, rows, onConflict){
+  if(!rows || !rows.length) return Promise.resolve()
+  return fetch(c.url+'/rest/v1/'+table+'?on_conflict='+(onConflict||'id'), {
+    method: 'POST',
+    headers: {
+      'apikey': c.key, 'Authorization': 'Bearer '+c.key,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(rows)
+  }).then(function(r){ if(!r.ok) throw new Error(table+' : HTTP '+r.status) })
 }
 
 // ── Envoi (push) — appelé automatiquement à chaque autosave() ──
 function syncToSupabase(data){
   if(!cloudConfigured()) return
   var c = getCloudConfig()
-  var payload = { id: CLOUD_ROW_ID, data: data, updated_at: new Date().toISOString() }
-  fetch(c.url+'/rest/v1/avidata?on_conflict=id', {
-    method: 'POST',
-    headers: {
-      'apikey': c.key,
-      'Authorization': 'Bearer '+c.key,
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates,return=minimal'
-    },
-    body: JSON.stringify(payload)
-  }).then(function(r){
-    if(!r.ok) throw new Error('HTTP '+r.status)
+
+  var financeOps = (data.FIN_operations||[]).map(function(o){
+    return {id:o.id, date:o.date, type:o.type, categorie:o.cat, description:o.desc, compte:o.compte, montant:o.montant, responsable:o.resp}
+  })
+  var financeSoldes = Object.keys(data.FIN_soldes||{}).map(function(k){
+    return {compte:k, montant:data.FIN_soldes[k]}
+  })
+  var stockQte = Object.keys(data.STOCK_QTE||{}).map(function(k){
+    return {produit_id:k, quantite:(data.STOCK_QTE[k]||{}).qte||0, prix_moyen:(data.STOCK_QTE[k]||{}).prix_moyen||0}
+  })
+  var stockMvts = (data.STOCK_MOUVEMENTS||[]).map(function(m){
+    return {id:m.id, date:m.date, produit_id:m.prodId, produit_nom:m.prodNom, type:m.type, quantite:m.qte, unite:m.unite, prix:m.prix, total:m.total, motif:m.motif, batiment:m.bloc||'', responsable:m.resp}
+  })
+  var clients = (data.COMMERCE_clients||[]).map(function(cl){
+    return {id:cl.id, nom:cl.nom, type:cl.type, telephone:cl.tel, email:cl.email, adresse:cl.adresse, delai_paiement:cl.delai, plafond_credit:cl.plafond, solde:cl.solde}
+  })
+  var factures = (data.COMMERCE_factures||[]).map(function(f){
+    return {id:f.id, numero:f.num, date:f.date, client_id:f.clientId, client_nom:f.clientNom, articles:f.articles||[], total:f.total, acompte:f.acompte, solde:f.solde, paiement:f.paiement, statut:f.statut}
+  })
+  var pdv = (data.POINTS_DE_VENTE||[]).map(function(p){
+    return {id:p.id, nom:p.nom, zone:p.zone, adresse:p.adresse, gerant_select:p.gerantSelect, gerant_nom:p.gerantNom, gerant_tel:p.gerantTel, commission:p.commission, produits:p.produits||[], stock:p.stock||{}, ventes:p.ventes||[], ca:p.ca||0, statut:p.statut, date_creation:p.dateCreation}
+  })
+  var voyages = (data.LOG_voyages||[]).map(function(v){
+    return {id:v.id||Date.now()+Math.random(), date:v.date, type:v.type, destination:v.dest, chauffeur:v.chauffeur, km_depart:v.kmDep, km_arrivee:v.kmArr, litres:v.litres, cout:v.cout, notes:v.notes}
+  })
+  var recus = (data.LOG_recus||[]).map(function(r){
+    return {id:r.id||Date.now()+Math.random(), date:r.date, litres:r.litres, montant:r.montant, station:r.station, notes:r.notes}
+  })
+  var pannes = (data.LOG_pannes||[]).map(function(p){
+    return {id:p.id||Date.now()+Math.random(), date:p.date, gravite:p.gravite, type:p.type, description:p.desc, lieu:p.lieu, signale_par:p.par, cout:p.cout, statut:p.statut}
+  })
+  var santeEvts = (data.SANTE_EVENTS||[]).map(function(e){
+    return {id:e.id||Date.now()+Math.random(), date:e.date, type:e.type, gravite:e.gravite, description:e.desc, batiment:e.bloc, responsable:e.resp}
+  })
+
+  Promise.all([
+    _cloudUpsert(c,'finance_operations',financeOps),
+    _cloudUpsert(c,'finance_soldes',financeSoldes,'compte'),
+    _cloudUpsert(c,'stock_quantites',stockQte,'produit_id'),
+    _cloudUpsert(c,'stock_mouvements',stockMvts),
+    _cloudUpsert(c,'commerce_clients',clients),
+    _cloudUpsert(c,'commerce_factures',factures),
+    _cloudUpsert(c,'points_de_vente',pdv),
+    _cloudUpsert(c,'logistique_voyages',voyages),
+    _cloudUpsert(c,'logistique_recus',recus),
+    _cloudUpsert(c,'logistique_pannes',pannes),
+    _cloudUpsert(c,'sante_evenements',santeEvts),
+    _cloudUpsert(c,'logistique_config',[{id:'principal',km_actuel:data.LOG_kmActuel||0,voyages_total:data.LOG_voyTotal||0,voyages_depuis_vidange:data.LOG_voyDepuis||0,seuil_vidange:data.LOG_seuil||50,date_derniere_vidange:data.LOG_dateVidange}],'id'),
+    _cloudUpsert(c,'parametres',[{id:'principal',data:JSON.parse(localStorage.getItem('avi_params_v2')||'{}')}],'id')
+  ]).then(function(){
     setCloudStatus('ok', '☁️ Synchronisé à '+new Date().toLocaleTimeString('fr-FR'))
   }).catch(function(err){
-    setCloudStatus('error', '⚠️ Envoi impossible : '+err.message)
+    setCloudStatus('error', '⚠️ Envoi partiel : '+err.message)
   })
 }
 
-// ── Réception (pull) — au login puis en polling périodique ──
+// ── Réception (pull) — une requête par table ──
+function _cloudFetch(c, table, select){
+  return fetch(c.url+'/rest/v1/'+table+'?select='+(select||'*'), {
+    headers: { 'apikey': c.key, 'Authorization': 'Bearer '+c.key }
+  }).then(function(r){ if(!r.ok) throw new Error(table+' : HTTP '+r.status); return r.json() })
+}
+
 function pullFromSupabase(applyIfNewer, cb){
   if(!cloudConfigured()){ if(cb) cb(false); return }
   var c = getCloudConfig()
-  fetch(c.url+'/rest/v1/avidata?id=eq.'+CLOUD_ROW_ID+'&select=data,updated_at', {
-    headers: { 'apikey': c.key, 'Authorization': 'Bearer '+c.key }
-  }).then(function(r){
-    if(!r.ok) throw new Error('HTTP '+r.status)
-    return r.json()
-  }).then(function(rows){
-    if(!rows || !rows.length){ if(cb) cb(true); return }
-    var remote = rows[0]
-    var localRaw = null
-    try{ localRaw = JSON.parse(localStorage.getItem(AVI_KEY)||'null') }catch(e){}
-    var remoteTime = remote.updated_at ? new Date(remote.updated_at).getTime() : 0
-    var localTime  = (localRaw && localRaw.savedAt) ? new Date(localRaw.savedAt).getTime() : 0
-    if(applyIfNewer && remoteTime > localTime && remote.data){
-      try{ localStorage.setItem(AVI_KEY, JSON.stringify(remote.data)) }catch(e){}
-      restaurerDonnees()
-      rafraichirTousLesModules()
-      setCloudStatus('ok', '⬇️ Données reçues du serveur ('+new Date(remote.updated_at).toLocaleTimeString('fr-FR')+')')
+
+  Promise.all([
+    _cloudFetch(c,'finance_operations'), _cloudFetch(c,'finance_soldes'),
+    _cloudFetch(c,'stock_quantites'), _cloudFetch(c,'stock_mouvements'),
+    _cloudFetch(c,'commerce_clients'), _cloudFetch(c,'commerce_factures'),
+    _cloudFetch(c,'points_de_vente'), _cloudFetch(c,'logistique_voyages'),
+    _cloudFetch(c,'logistique_recus'), _cloudFetch(c,'logistique_pannes'),
+    _cloudFetch(c,'sante_evenements'), _cloudFetch(c,'logistique_config'),
+    _cloudFetch(c,'parametres')
+  ]).then(function(results){
+    var [finOps, finSoldes, stkQte, stkMvts, clients, factures, pdv, voyages, recus, pannes, sante, logCfg, params] = results
+
+    if(typeof FIN!=='undefined'){
+      FIN.operations = finOps.map(function(o){ return {id:o.id, date:o.date, type:o.type, cat:o.categorie, desc:o.description, compte:o.compte, montant:o.montant, resp:o.responsable} })
+      FIN.soldes = {}; finSoldes.forEach(function(s){ FIN.soldes[s.compte] = s.montant })
     }
+    if(typeof STOCK_QTE!=='undefined'){
+      STOCK_QTE = {}; stkQte.forEach(function(s){ STOCK_QTE[s.produit_id] = {qte:s.quantite, prix_moyen:s.prix_moyen} })
+    }
+    if(typeof STOCK_MOUVEMENTS!=='undefined'){
+      STOCK_MOUVEMENTS = stkMvts.map(function(m){ return {id:m.id, date:m.date, prodId:m.produit_id, prodNom:m.produit_nom, type:m.type, qte:m.quantite, unite:m.unite, prix:m.prix, total:m.total, motif:m.motif, bloc:m.batiment, resp:m.responsable} })
+    }
+    if(typeof COMMERCE!=='undefined'){
+      COMMERCE.clients = clients.map(function(cl){ return {id:cl.id, nom:cl.nom, type:cl.type, tel:cl.telephone, email:cl.email, adresse:cl.adresse, delai:cl.delai_paiement, plafond:cl.plafond_credit, solde:cl.solde} })
+      COMMERCE.factures = factures.map(function(f){ return {id:f.id, num:f.numero, date:f.date, clientId:f.client_id, clientNom:f.client_nom, articles:f.articles, total:f.total, acompte:f.acompte, solde:f.solde, paiement:f.paiement, statut:f.statut} })
+    }
+    if(typeof POINTS_DE_VENTE!=='undefined'){
+      POINTS_DE_VENTE = pdv.map(function(p){ return {id:p.id, nom:p.nom, zone:p.zone, adresse:p.adresse, gerantSelect:p.gerant_select, gerantNom:p.gerant_nom, gerantTel:p.gerant_tel, commission:p.commission, produits:p.produits, stock:p.stock, ventes:p.ventes, ca:p.ca, statut:p.statut, dateCreation:p.date_creation} })
+    }
+    if(typeof LOG!=='undefined'){
+      LOG.voyages = voyages.map(function(v){ return {date:v.date, type:v.type, dest:v.destination, chauffeur:v.chauffeur, kmDep:v.km_depart, kmArr:v.km_arrivee, litres:v.litres, cout:v.cout, notes:v.notes} })
+      LOG.recus = recus.map(function(r){ return {date:r.date, litres:r.litres, montant:r.montant, station:r.station, notes:r.notes} })
+      LOG.pannes = pannes.map(function(p){ return {date:p.date, gravite:p.gravite, type:p.type, desc:p.description, lieu:p.lieu, par:p.signale_par, cout:p.cout, statut:p.statut} })
+      if(logCfg && logCfg[0]){
+        LOG.kmActuel=logCfg[0].km_actuel||0; LOG.voyTotal=logCfg[0].voyages_total||0
+        LOG.voyDepuis=logCfg[0].voyages_depuis_vidange||0; LOG.seuil=logCfg[0].seuil_vidange||50
+        LOG.dateVidange=logCfg[0].date_derniere_vidange
+      }
+    }
+    if(typeof SANTE_EVENTS!=='undefined'){
+      SANTE_EVENTS.length = 0
+      sante.forEach(function(e){ SANTE_EVENTS.push({date:e.date, type:e.type, gravite:e.gravite, desc:e.description, bloc:e.batiment, resp:e.responsable}) })
+    }
+    if(params && params[0] && params[0].data){
+      try{ localStorage.setItem('avi_params_v2', JSON.stringify(params[0].data)) }catch(e){}
+    }
+
+    if(applyIfNewer){
+      try{ autosave() }catch(e){}
+      rafraichirTousLesModules()
+    }
+    setCloudStatus('ok', '⬇️ Données reçues du serveur ('+new Date().toLocaleTimeString('fr-FR')+')')
     if(cb) cb(true)
   }).catch(function(err){
     setCloudStatus('error', '⚠️ Réception impossible : '+err.message)
