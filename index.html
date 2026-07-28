@@ -4603,16 +4603,16 @@ function syncToSupabase(data){
     return {id:p.id, nom:p.nom, zone:p.zone, adresse:p.adresse, gerant_select:p.gerantSelect, gerant_nom:p.gerantNom, gerant_tel:p.gerantTel, commission:p.commission, produits:p.produits||[], stock:p.stock||{}, ventes:p.ventes||[], ca:p.ca||0, statut:p.statut, date_creation:p.dateCreation}
   })
   var voyages = (data.LOG_voyages||[]).map(function(v){
-    return {id:v.id||Date.now()+Math.random(), date:v.date, type:v.type, destination:v.dest, chauffeur:v.chauffeur, km_depart:v.kmDep, km_arrivee:v.kmArr, litres:v.litres, cout:v.cout, notes:v.notes}
+    return {id:v.id, date:v.date, type:v.type, destination:v.dest, chauffeur:v.chauffeur, km_depart:v.kmDep, km_arrivee:v.kmArr, litres:v.litres, cout:v.cout, notes:v.notes}
   })
   var recus = (data.LOG_recus||[]).map(function(r){
-    return {id:r.id||Date.now()+Math.random(), date:r.date, litres:r.litres, montant:r.montant, station:r.station, notes:r.notes}
+    return {id:r.id, date:r.date, litres:r.litres, montant:r.montant, station:r.station, notes:r.notes}
   })
   var pannes = (data.LOG_pannes||[]).map(function(p){
-    return {id:p.id||Date.now()+Math.random(), date:p.date, gravite:p.gravite, type:p.type, description:p.desc, lieu:p.lieu, signale_par:p.par, cout:p.cout, statut:p.statut}
+    return {id:p.id, date:p.date, gravite:p.gravite, type:p.type, description:p.desc, lieu:p.lieu, signale_par:p.par, cout:p.cout, statut:p.statut}
   })
   var santeEvts = (data.SANTE_EVENTS||[]).map(function(e){
-    return {id:e.id||Date.now()+Math.random(), date:e.date, type:e.type, gravite:e.gravite, description:e.desc, batiment:e.bloc, responsable:e.resp}
+    return {id:e.id, date:e.date, type:e.type, gravite:e.gravite, description:e.desc, batiment:e.bloc, responsable:e.resp}
   })
 
   Promise.all([
@@ -4643,6 +4643,15 @@ function _cloudFetch(c, table, select){
   }).then(function(r){ if(!r.ok) throw new Error(table+' : HTTP '+r.status); return r.json() })
 }
 
+// ── Fusionne les données reçues du serveur avec les données locales,
+//    sans jamais perdre un élément saisi localement mais pas encore envoyé ──
+function _fusionnerParId(local, remote){
+  var vusIds = {}
+  remote.forEach(function(r){ if(r && r.id!==undefined) vusIds[r.id]=true })
+  var localNonEnvoyes = (local||[]).filter(function(l){ return l && l.id!==undefined && !vusIds[l.id] })
+  return remote.concat(localNonEnvoyes)
+}
+
 function pullFromSupabase(applyIfNewer, cb){
   if(!cloudConfigured()){ if(cb) cb(false); return }
   var c = getCloudConfig()
@@ -4659,26 +4668,34 @@ function pullFromSupabase(applyIfNewer, cb){
     var [finOps, finSoldes, stkQte, stkMvts, clients, factures, pdv, voyages, recus, pannes, sante, logCfg, params] = results
 
     if(typeof FIN!=='undefined'){
-      FIN.operations = finOps.map(function(o){ return {id:o.id, date:o.date, type:o.type, cat:o.categorie, desc:o.description, compte:o.compte, montant:o.montant, resp:o.responsable} })
+      var finOpsRemote = finOps.map(function(o){ return {id:o.id, date:o.date, type:o.type, cat:o.categorie, desc:o.description, compte:o.compte, montant:o.montant, resp:o.responsable} })
+      FIN.operations = _fusionnerParId(FIN.operations, finOpsRemote)
       FIN.soldes = {}; finSoldes.forEach(function(s){ FIN.soldes[s.compte] = s.montant })
     }
     if(typeof STOCK_QTE!=='undefined'){
       STOCK_QTE = {}; stkQte.forEach(function(s){ STOCK_QTE[s.produit_id] = {qte:s.quantite, prix_moyen:s.prix_moyen} })
     }
     if(typeof STOCK_MOUVEMENTS!=='undefined'){
-      STOCK_MOUVEMENTS = stkMvts.map(function(m){ return {id:m.id, date:m.date, prodId:m.produit_id, prodNom:m.produit_nom, type:m.type, qte:m.quantite, unite:m.unite, prix:m.prix, total:m.total, motif:m.motif, bloc:m.batiment, resp:m.responsable} })
+      var stkMvtsRemote = stkMvts.map(function(m){ return {id:m.id, date:m.date, prodId:m.produit_id, prodNom:m.produit_nom, type:m.type, qte:m.quantite, unite:m.unite, prix:m.prix, total:m.total, motif:m.motif, bloc:m.batiment, resp:m.responsable} })
+      STOCK_MOUVEMENTS = _fusionnerParId(STOCK_MOUVEMENTS, stkMvtsRemote)
     }
     if(typeof COMMERCE!=='undefined'){
-      COMMERCE.clients = clients.map(function(cl){ return {id:cl.id, nom:cl.nom, type:cl.type, tel:cl.telephone, email:cl.email, adresse:cl.adresse, delai:cl.delai_paiement, plafond:cl.plafond_credit, solde:cl.solde} })
-      COMMERCE.factures = factures.map(function(f){ return {id:f.id, num:f.numero, date:f.date, clientId:f.client_id, clientNom:f.client_nom, articles:f.articles, total:f.total, acompte:f.acompte, solde:f.solde, paiement:f.paiement, statut:f.statut} })
+      var clientsRemote = clients.map(function(cl){ return {id:cl.id, nom:cl.nom, type:cl.type, tel:cl.telephone, email:cl.email, adresse:cl.adresse, delai:cl.delai_paiement, plafond:cl.plafond_credit, solde:cl.solde} })
+      COMMERCE.clients = _fusionnerParId(COMMERCE.clients, clientsRemote)
+      var facturesRemote = factures.map(function(f){ return {id:f.id, num:f.numero, date:f.date, clientId:f.client_id, clientNom:f.client_nom, articles:f.articles, total:f.total, acompte:f.acompte, solde:f.solde, paiement:f.paiement, statut:f.statut} })
+      COMMERCE.factures = _fusionnerParId(COMMERCE.factures, facturesRemote)
     }
     if(typeof POINTS_DE_VENTE!=='undefined'){
-      POINTS_DE_VENTE = pdv.map(function(p){ return {id:p.id, nom:p.nom, zone:p.zone, adresse:p.adresse, gerantSelect:p.gerant_select, gerantNom:p.gerant_nom, gerantTel:p.gerant_tel, commission:p.commission, produits:p.produits, stock:p.stock, ventes:p.ventes, ca:p.ca, statut:p.statut, dateCreation:p.date_creation} })
+      var pdvRemote = pdv.map(function(p){ return {id:p.id, nom:p.nom, zone:p.zone, adresse:p.adresse, gerantSelect:p.gerant_select, gerantNom:p.gerant_nom, gerantTel:p.gerant_tel, commission:p.commission, produits:p.produits, stock:p.stock, ventes:p.ventes, ca:p.ca, statut:p.statut, dateCreation:p.date_creation} })
+      POINTS_DE_VENTE = _fusionnerParId(POINTS_DE_VENTE, pdvRemote)
     }
     if(typeof LOG!=='undefined'){
-      LOG.voyages = voyages.map(function(v){ return {date:v.date, type:v.type, dest:v.destination, chauffeur:v.chauffeur, kmDep:v.km_depart, kmArr:v.km_arrivee, litres:v.litres, cout:v.cout, notes:v.notes} })
-      LOG.recus = recus.map(function(r){ return {date:r.date, litres:r.litres, montant:r.montant, station:r.station, notes:r.notes} })
-      LOG.pannes = pannes.map(function(p){ return {date:p.date, gravite:p.gravite, type:p.type, desc:p.description, lieu:p.lieu, par:p.signale_par, cout:p.cout, statut:p.statut} })
+      var voyagesRemote = voyages.map(function(v){ return {id:v.id, date:v.date, type:v.type, dest:v.destination, chauffeur:v.chauffeur, kmDep:v.km_depart, kmArr:v.km_arrivee, litres:v.litres, cout:v.cout, notes:v.notes} })
+      LOG.voyages = _fusionnerParId(LOG.voyages, voyagesRemote)
+      var recusRemote = recus.map(function(r){ return {id:r.id, date:r.date, litres:r.litres, montant:r.montant, station:r.station, notes:r.notes} })
+      LOG.recus = _fusionnerParId(LOG.recus, recusRemote)
+      var pannesRemote = pannes.map(function(p){ return {id:p.id, date:p.date, gravite:p.gravite, type:p.type, desc:p.description, lieu:p.lieu, par:p.signale_par, cout:p.cout, statut:p.statut} })
+      LOG.pannes = _fusionnerParId(LOG.pannes, pannesRemote)
       if(logCfg && logCfg[0]){
         LOG.kmActuel=logCfg[0].km_actuel||0; LOG.voyTotal=logCfg[0].voyages_total||0
         LOG.voyDepuis=logCfg[0].voyages_depuis_vidange||0; LOG.seuil=logCfg[0].seuil_vidange||50
@@ -4686,8 +4703,10 @@ function pullFromSupabase(applyIfNewer, cb){
       }
     }
     if(typeof SANTE_EVENTS!=='undefined'){
+      var santeRemote = sante.map(function(e){ return {id:e.id, date:e.date, type:e.type, gravite:e.gravite, desc:e.description, bloc:e.batiment, resp:e.responsable} })
+      var santeFusionne = _fusionnerParId(SANTE_EVENTS, santeRemote)
       SANTE_EVENTS.length = 0
-      sante.forEach(function(e){ SANTE_EVENTS.push({date:e.date, type:e.type, gravite:e.gravite, desc:e.description, bloc:e.batiment, resp:e.responsable}) })
+      santeFusionne.forEach(function(e){ SANTE_EVENTS.push(e) })
     }
     if(params && params[0] && params[0].data){
       try{ localStorage.setItem('avi_params_v2', JSON.stringify(params[0].data)) }catch(e){}
@@ -8189,7 +8208,7 @@ function enregistrerClient(){
   if(!nom){ alert('Le nom est obligatoire.'); return }
   if(!tel){ alert('Le téléphone est obligatoire.'); return }
   var cl = {
-    id:        'CLI-'+Date.now(),
+    id:        'CLI-'+Date.now()+'-'+Math.floor(Math.random()*10000),
     nom:       nom,
     type:      document.getElementById('cli-type').value,
     tel:       tel,
