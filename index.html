@@ -3753,61 +3753,80 @@ function doLogin(){
 
     // ✅ Connexion réussie — lancer la session
     _hideLoginError();
-    currentUser = u;
-    currentUser.email = email  // stocker l'email pour la gestion du mot de passe
-
-    // Appliquer les permissions selon l'email
-    appliquerPermissions(email)
-
-    var si = document.getElementById('sb-initials');
-    var sn = document.getElementById('sb-name');
-    var sr = document.getElementById('sb-role');
-    if(si) si.textContent = u.init || u.name.charAt(0);
-    if(sn) sn.textContent = u.name;
-    if(sr) sr.textContent = u.role + (u.tel ? ' · ' + u.tel : '');
-
-    var greet = document.getElementById('db-greeting');
-    if(greet) greet.textContent = 'Bonjour, ' + u.name.split(' ')[0] + ' 👋';
-
-    var ls = document.getElementById('login-screen');
-    var app = document.getElementById('app');
-    if(ls) ls.style.display = 'none';
-    if(app){ app.style.display = 'block'; }
-
-    var pageDepart = (PAGES_AUTORISEES[0] === '*') ? 'dashboard' : (PAGES_AUTORISEES[0] || 'dashboard')
-    try { goPage(pageDepart, null); } catch(e){ console.warn('goPage error:', e); }
-    setTimeout(function(){
-      try{ restaurerDonnees(); }catch(x){}
-      try{ updateTimestamp(); }catch(x){}
-      try{ initDashboard(); }catch(x){}
-      try{ initAllCharts(); }catch(x){}
-      // Récupérer les données les plus récentes du serveur partagé (si configuré)
-      try{
-        if(typeof cloudConfigured==='function' && cloudConfigured()){
-          pullFromSupabase(true)
-          demarrerSyncCloud()
-        }
-      }catch(xc){}
-      setTimeout(function(){
-        try{ rafraichirFinance(); }catch(x){}
-        try{ rafraichirLogistique(); }catch(x){}
-        try{ rafraichirStock(); }catch(x){}
-        try{ rafraichirProduction(); }catch(x){}
-        try{ rafraichirPageSante(); }catch(x){}
-      }, 300);
-      // Journal accès
-      try{
-        var k = typeof AVI_KEY !== 'undefined' ? AVI_KEY : 'avi_data_v3';
-        var d = JSON.parse(localStorage.getItem(k)||'{}');
-        d.JOURNAL_ACCES = d.JOURNAL_ACCES || [];
-        d.JOURNAL_ACCES.unshift({ user: u.name, role: u.role, date: new Date().toLocaleString('fr-FR') });
-        d.JOURNAL_ACCES = d.JOURNAL_ACCES.slice(0, 50);
-        localStorage.setItem(k, JSON.stringify(d));
-      }catch(x){}
-    }, 200);
+    _activerSession(u, email)
   }).catch(function(){
     _showLoginError('⚠️ Erreur cryptographique. Utilisez un navigateur moderne.')
   })
+}
+
+// ── Active une session utilisateur (après mot de passe, ou restauration automatique) ──
+function _activerSession(u, email){
+  currentUser = u;
+  currentUser.email = email  // stocker l'email pour la gestion du mot de passe
+
+  // Mémoriser la session pour qu'elle survive à un rafraîchissement de la page
+  try{ localStorage.setItem('avi_session_email', email) }catch(e){}
+
+  // Appliquer les permissions selon l'email
+  appliquerPermissions(email)
+
+  var si = document.getElementById('sb-initials');
+  var sn = document.getElementById('sb-name');
+  var sr = document.getElementById('sb-role');
+  if(si) si.textContent = u.init || u.name.charAt(0);
+  if(sn) sn.textContent = u.name;
+  if(sr) sr.textContent = u.role + (u.tel ? ' · ' + u.tel : '');
+
+  var greet = document.getElementById('db-greeting');
+  if(greet) greet.textContent = 'Bonjour, ' + u.name.split(' ')[0] + ' 👋';
+
+  var ls = document.getElementById('login-screen');
+  var app = document.getElementById('app');
+  if(ls) ls.style.display = 'none';
+  if(app){ app.style.display = 'block'; }
+
+  var pageDepart = (PAGES_AUTORISEES[0] === '*') ? 'dashboard' : (PAGES_AUTORISEES[0] || 'dashboard')
+  try { goPage(pageDepart, null); } catch(e){ console.warn('goPage error:', e); }
+  setTimeout(function(){
+    try{ restaurerDonnees(); }catch(x){}
+    try{ updateTimestamp(); }catch(x){}
+    try{ initDashboard(); }catch(x){}
+    try{ initAllCharts(); }catch(x){}
+    // Récupérer les données les plus récentes du serveur partagé (si configuré)
+    try{
+      if(typeof cloudConfigured==='function' && cloudConfigured()){
+        pullFromSupabase(true)
+        demarrerSyncCloud()
+      }
+    }catch(xc){}
+    setTimeout(function(){
+      try{ rafraichirFinance(); }catch(x){}
+      try{ rafraichirLogistique(); }catch(x){}
+      try{ rafraichirStock(); }catch(x){}
+      try{ rafraichirProduction(); }catch(x){}
+      try{ rafraichirPageSante(); }catch(x){}
+    }, 300);
+    // Journal accès
+    try{
+      var k = typeof AVI_KEY !== 'undefined' ? AVI_KEY : 'avi_data_v3';
+      var d = JSON.parse(localStorage.getItem(k)||'{}');
+      d.JOURNAL_ACCES = d.JOURNAL_ACCES || [];
+      d.JOURNAL_ACCES.unshift({ user: u.name, role: u.role, date: new Date().toLocaleString('fr-FR') });
+      d.JOURNAL_ACCES = d.JOURNAL_ACCES.slice(0, 50);
+      localStorage.setItem(k, JSON.stringify(d));
+    }catch(x){}
+  }, 200);
+}
+
+// ── Restaure automatiquement la session si l'utilisateur était déjà connecté ──
+function restaurerSessionAuto(){
+  var email = null
+  try{ email = localStorage.getItem('avi_session_email') }catch(e){}
+  if(!email) return false
+  var u = USERS[email]
+  if(!u) return false
+  _activerSession(u, email)
+  return true
 }
 
 function setDemo(e){
@@ -3819,6 +3838,8 @@ function setDemo(e){
 }
 
 function doLogout(){
+  try{ localStorage.removeItem('avi_session_email') }catch(e){}
+  currentUser = null
   document.getElementById('login-screen').style.display='flex'
   document.getElementById('app').style.display='none'
 }
@@ -4460,6 +4481,8 @@ document.addEventListener('DOMContentLoaded', function(){
       if(e.target.closest('.nav-item')) closeMobileSidebar()
     })
   }
+  // Reconnexion automatique si une session était active avant le rafraîchissement
+  try{ restaurerSessionAuto() }catch(e){}
 })
 
 // ════════════════════════════════════════════════════════════
