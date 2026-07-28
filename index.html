@@ -7191,6 +7191,7 @@ function enregistrerVoyage(){
   if(!dest){ alert('Renseigne la destination / le motif.'); return }
   var km = parseInt(document.getElementById('voy-km').value) || LOG.kmActuel || 0
   var voyage = {
+    id: Date.now(),
     date: document.getElementById('voy-date').value,
     type: document.getElementById('voy-type').value,
     dest: dest,
@@ -7215,6 +7216,7 @@ function enregistrerPanne(){
   var type = document.getElementById('panne-type').value
   if(!desc || !type){ alert('Renseigne le type et la description de la panne.'); return }
   LOG.pannes.unshift({
+    id: Date.now(),
     date: document.getElementById('panne-date').value,
     gravite: document.getElementById('panne-gravite').value,
     type: type,
@@ -9011,7 +9013,7 @@ function enregistrerRecu(){
   if(typeof LOG !== 'undefined'){
     if(!LOG.recus) LOG.recus=[]
     LOG.recus.unshift({
-      date:date, litres:litres, montant:montant,
+      id:Date.now(), date:date, litres:litres, montant:montant,
       station:(document.getElementById('recu-station')||{}).value||'',
       notes:(document.getElementById('recu-notes')||{}).value||''
     })
