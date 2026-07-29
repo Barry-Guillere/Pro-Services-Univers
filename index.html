@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pro-Services Univers</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -12,9 +13,36 @@
   --bg:#1A1A1A;--white:#242424;
   --gray-50:#202020;--gray-100:#2E2E2E;--gray-200:#3D3D3D;
   --gray-300:#505050;--gray-400:#707070;--gray-500:#909090;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
   --gray-600:#B0B0B0;--gray-700:#D0D0D0;--gray-900:#EDEDED;
   --red:#EF4444;--amber:#F59E0B;--blue:#3B82F6;--purple:#8B5CF6;
   --sidebar:220px
+
 }
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--gray-900);font-size:14px;line-height:1.5}
 
@@ -1851,12 +1879,8 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
           <button class="qp" onclick="aiChat('Impact d\'une hausse de 15% du prix du maïs sur ma rentabilité ?')">📊 Simulation hausse maïs</button>
           <div style="margin-top:10px;padding:9px 11px;background:rgba(245,158,11,.12);border:1px solid #FDE68A;border-radius:7px;font-size:11px;color:#FBBF24"><strong>Note :</strong> L'agent conseille uniquement, ne modifie aucune donnée.</div>
           <div style="margin-top:10px;padding:10px 12px;background:rgba(34,197,94,.12);border:1px solid #BBF7D0;border-radius:8px">
-            <div style="font-size:11px;font-weight:700;color:#4ADE80;margin-bottom:7px">🔑 Clé API Claude (optionnel — pour analyse avancée)</div>
-            <div style="display:flex;gap:6px">
-              <input type="password" id="ia-api-key" placeholder="sk-ant-api03-..." style="flex:1;padding:6px 10px;border:1.5px solid #BBF7D0;border-radius:7px;font-size:12px;font-family:monospace;outline:none" oninput="this.style.borderColor=this.value.startsWith('sk-ant-')?'#10B981':'#FCD34D'">
-              <button class="btn btn-p btn-sm" onclick="sauvegarderCleAPI()" style="font-size:11px;white-space:nowrap">Sauvegarder</button>
-            </div>
-            <div style="font-size:10px;color:#6B7280;margin-top:5px">Sans clé : analyse locale intelligente. Avec clé : analyse via Claude API.</div>
+            <div style="font-size:11px;font-weight:700;color:#4ADE80;margin-bottom:7px">🔑 Agent IA (Claude)</div>
+            <div style="font-size:10px;color:#6B7280">La clé API Claude est gérée côté serveur (Edge Function Supabase) — elle n'est plus saisie ni stockée dans le navigateur. Sans configuration serveur : analyse locale intelligente utilisée automatiquement.</div>
           </div>
         </div>
       </div>
@@ -3507,18 +3531,29 @@ if(typeof POS_PAIMENT === 'undefined') var POS_PAIMENT = 'Especes'
 if(typeof POS_VENTES === 'undefined') var POS_VENTES = []
 if(typeof POS_SESSION_CA === 'undefined') var POS_SESSION_CA = 0
 var currentUser=null
-const USERS = {
-  'barrysadio0@gmail.com':   {name:'Amadou Sadio Barry',  tel:'621989823', role:'PDG Directeur General',              init:'ASB'},
-  'hhaba@avimanager.sn':     {name:'Honore Doré',         tel:'625171922', role:'Resp. Production et Suivi Sanitaire', init:'HD'},
-  'arabioubah@avimanager.sn':{name:'Arabiou Bah',         tel:'629481997', role:'Resp. Finance et Commerce',           init:'ABH'},
-  'ambarry@avimanager.sn':   {name:'Amadou Moron Barry',  tel:'621540515', role:'Responsable Stock',                   init:'AMB'}
-}
+
+// ════════════════════════════════════════════════════════════
+//  SUPABASE — Auth + base partagée
+//  URL et clé anonyme sont publiques par conception (protégées
+//  par les policies RLS côté serveur, jamais par le secret).
+//  Voir supabase/schema_auth.sql pour la configuration complète.
+// ════════════════════════════════════════════════════════════
+var SUPABASE_URL = 'https://jzaxgaflcknenpxpzulp.supabase.co'
+var SUPABASE_ANON_KEY = 'sb_publishable_8wypR0d0ZL29VMlb0DFEng_Yn9tjiOD'
+var SUPABASE_READY = SUPABASE_URL.indexOf('VOTRE-PROJET') === -1 && typeof supabase !== 'undefined'
+var sbClient = SUPABASE_READY ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
+
+// Annuaire de l'équipe — rempli dynamiquement depuis la table `profiles`
+// Supabase après connexion (voir chargerEquipeDepuisSupabase). Ne contient
+// plus aucune identité ni mot de passe en dur dans le code source.
+var USERS = {}
 
 // ════════════════════════════════════════════════════════════
 //  MODULE ADMINISTRATION — chargement des sous-sections
 // ════════════════════════════════════════════════════════════
 function chargerAdmin(){
   try{ chargerAdminEquipe() }catch(e){}
+  try{ chargerEquipeDepuisSupabase() }catch(e){}
   try{ chargerAdminFerme() }catch(e){}
   try{ chargerAdminBatiments() }catch(e){}
   try{ chargerAdminJournal() }catch(e){}
@@ -3669,27 +3704,11 @@ function aPageAcces(pageId){
 }
 
 // ════════════════════════════════════════════════════════════
-//  AUTHENTIFICATION — Version ultra-robuste
+//  AUTHENTIFICATION — Supabase Auth
+//  Les mots de passe ne sont jamais présents dans ce fichier :
+//  Supabase les vérifie côté serveur (hash salé géré par GoTrue).
+//  Voir supabase/schema_auth.sql pour la configuration complète.
 // ════════════════════════════════════════════════════════════
-// ── Mots de passe individuels (SHA-256) — jamais en clair ────────────
-// Mot de passe par défaut par utilisateur (à changer à la première connexion)
-//   Amadou Sadio Barry  → Barry2025!
-//   Honoré Doré         → Pro-serv1
-//   Arabiou Bah         → Bah2025!
-//   Amadou Moron Barry  → Moron2025!
-var MDP_HASH_PAR_USER = {
-  'barrysadio0@gmail.com':    '8a07ba8707e063ae0a64caff3da2fb517395b5473f8abe4f3b897e2021fae34c',
-  'hhaba@avimanager.sn':      '1e323aac8f98e27cde8cb3c95ec8c57d51974a9d456240b2696f299c8dc4218b',
-  'arabioubah@avimanager.sn': '3803de6da56dd5feb285eba59930db08c0529ec3c2bac7a49f7c25238c8b3488',
-  'ambarry@avimanager.sn':    '771cfa8fd346bcdaeeeb781b7b76c603c2febd206f624ac8be3bae1b17ae3467'
-}
-var MDP_DEMO_FILL = ''  // vide — chaque utilisateur tape son propre mot de passe
-
-async function sha256(str){
-  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
-  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0') }).join('')
-}
-
 function _showLoginError(msg){
   var el = document.getElementById('login-error');
   if(el){ el.innerHTML = msg; el.style.display = 'block'; }
@@ -3729,34 +3748,55 @@ function doLogin(){
     return;
   }
 
-  // Vérifier USERS
-  if(typeof USERS === 'undefined' || USERS === null){
-    _showLoginError('⚠️ Données non chargées. Rechargez la page (F5).');
+  if(!SUPABASE_READY || !sbClient){
+    _showLoginError('⚠️ Connexion sécurisée non configurée sur ce déploiement.<br>Renseignez SUPABASE_URL / SUPABASE_ANON_KEY dans le code (voir supabase/schema_auth.sql).');
     return;
   }
 
-  var u = USERS[email];
-  if(!u){
-    _showLoginError('Email non reconnu. Comptes : barrysadio0@gmail.com, hhaba@avimanager.sn, arabioubah@avimanager.sn, ambarry@avimanager.sn');
-    return;
-  }
-
-  // Vérification asynchrone par hash SHA-256 — par utilisateur
-  var mdpHashRef = MDP_HASH_PAR_USER[email] || ''
-  try { mdpHashRef = localStorage.getItem('avi_mdp_hash_' + email) || mdpHashRef } catch(e){}
-
-  sha256(pwd).then(function(hashSaisi){
-    if(hashSaisi !== mdpHashRef){
-      _showLoginError('Mot de passe incorrect.')
+  sbClient.auth.signInWithPassword({ email: email, password: pwd }).then(function(res){
+    if(res.error){
+      _showLoginError(res.error.message === 'Invalid login credentials'
+        ? 'Email ou mot de passe incorrect.'
+        : '⚠️ ' + res.error.message)
       return
     }
-
-    // ✅ Connexion réussie — lancer la session
     _hideLoginError();
-    _activerSession(u, email)
-  }).catch(function(){
-    _showLoginError('⚠️ Erreur cryptographique. Utilisez un navigateur moderne.')
+    return _chargerSessionDepuisSupabase(res.data.user)
+  }).catch(function(err){
+    _showLoginError('⚠️ Erreur de connexion réseau : ' + (err && err.message || err))
   })
+}
+
+// ── Construit currentUser à partir de la table `profiles` Supabase, puis active la session ──
+function _chargerSessionDepuisSupabase(authUser){
+  if(!authUser || !sbClient) return Promise.resolve(false)
+  return sbClient.from('profiles').select('name,tel,role,init').eq('id', authUser.id).single().then(function(res){
+    var p = (res && res.data) || {}
+    var u = {
+      name: p.name || authUser.email,
+      tel:  p.tel  || '',
+      role: p.role || 'Utilisateur',
+      init: p.init || (p.name || authUser.email).slice(0,2).toUpperCase()
+    }
+    USERS[authUser.email] = u
+    _activerSession(u, authUser.email)
+    return true
+  }).catch(function(err){
+    _showLoginError('⚠️ Connecté mais profil introuvable (table `profiles`) : ' + (err && err.message || err))
+    return false
+  })
+}
+
+// ── Annuaire complet de l'équipe (page Admin) depuis Supabase ──
+function chargerEquipeDepuisSupabase(){
+  if(!sbClient) return Promise.resolve()
+  return sbClient.from('profiles').select('id,email,name,tel,role,init').then(function(res){
+    if(!res || !res.data) return
+    res.data.forEach(function(p){
+      USERS[p.email] = { name:p.name, tel:p.tel, role:p.role, init:p.init }
+    })
+    chargerAdminEquipe()
+  }).catch(function(){})
 }
 
 // ── Active une session utilisateur (après mot de passe, ou restauration automatique) ──
@@ -3820,13 +3860,12 @@ function _activerSession(u, email){
 
 // ── Restaure automatiquement la session si l'utilisateur était déjà connecté ──
 function restaurerSessionAuto(){
-  var email = null
-  try{ email = localStorage.getItem('avi_session_email') }catch(e){}
-  if(!email) return false
-  var u = USERS[email]
-  if(!u) return false
-  _activerSession(u, email)
-  return true
+  if(!SUPABASE_READY || !sbClient) return Promise.resolve(false)
+  return sbClient.auth.getSession().then(function(res){
+    var session = res && res.data && res.data.session
+    if(!session || !session.user) return false
+    return _chargerSessionDepuisSupabase(session.user)
+  }).catch(function(){ return false })
 }
 
 function setDemo(e){
@@ -3839,6 +3878,7 @@ function setDemo(e){
 
 function doLogout(){
   try{ localStorage.removeItem('avi_session_email') }catch(e){}
+  if(sbClient){ try{ sbClient.auth.signOut() }catch(e){} }
   currentUser = null
   document.getElementById('login-screen').style.display='flex'
   document.getElementById('app').style.display='none'
@@ -4124,7 +4164,7 @@ function renderBuildings(){
     return `<div class="${card}" onclick="goPage('production',document.querySelector('.nav-item:nth-child(2)'))">
       <div style="display:flex;justify-content:space-between;align-items:center">${badge}</div>
       <div class="bat-name" style="margin-top:6px">${b.name}</div>
-      <div class="bat-sub">${b.lot} · ${b.count.toLocaleString('fr-FR')} poules ${b.extra||''}</div>
+      <div class="bat-sub">${esc(b.lot)} · ${b.count.toLocaleString('fr-FR')} poules ${b.extra||''}</div>
       <div class="bat-rate ${cls}">${b.rate.toFixed(1)}%</div>
       <div class="bat-stats"><span>${eggs.toLocaleString('fr-FR')} œufs</span><span>Var: ${varHtml}</span></div>
     </div>`
@@ -4994,7 +5034,7 @@ function renderCart(){
   document.getElementById('cart-total').textContent=total.toLocaleString('fr-FR')+' GNF'
   const c=document.getElementById('cart-items')
   if(!items.length){c.innerHTML='<div style="text-align:center;padding:40px 0;color:var(--gray-300);font-size:12px">Panier vide<br>Cliquez sur un produit</div>';return}
-  c.innerHTML=items.map(it=>`<div class="pos-row"><div class="pos-rname">${it.name}<br><span style="font-size:10px;color:var(--gray-400)">${it.price.toLocaleString('fr-FR')} F/${it.unit}</span></div><button class="qty-btn" onclick="changeQty('${it.id}',-1)">−</button><span style="min-width:18px;text-align:center;font-size:12px;font-weight:600">${it.qty}</span><button class="qty-btn" onclick="changeQty('${it.id}',1)">+</button><span style="font-size:11px;font-weight:600;min-width:56px;text-align:right">${(it.price*it.qty).toLocaleString('fr-FR')} GNF</span></div>`).join('')
+  c.innerHTML=items.map(it=>`<div class="pos-row"><div class="pos-rname">${esc(it.name)}<br><span style="font-size:10px;color:var(--gray-400)">${it.price.toLocaleString('fr-FR')} F/${it.unit}</span></div><button class="qty-btn" onclick="changeQty('${it.id}',-1)">−</button><span style="min-width:18px;text-align:center;font-size:12px;font-weight:600">${it.qty}</span><button class="qty-btn" onclick="changeQty('${it.id}',1)">+</button><span style="font-size:11px;font-weight:600;min-width:56px;text-align:right">${(it.price*it.qty).toLocaleString('fr-FR')} GNF</span></div>`).join('')
 }
 function processPay(method){
   const items=Object.values(cart)
@@ -5169,40 +5209,29 @@ function sendChat(){
   // Lire les données réelles
   var ctx = buildIAContext()
 
-  // Vérifier si une clé API est configurée
-  var apiKey = ''
-  try { apiKey = localStorage.getItem('avi_claude_api_key') || '' } catch(e){}
-
-  if(apiKey && apiKey.startsWith('sk-ant-')) {
-    // Mode 1 : API Claude réelle
+  // Mode 1 : Agent IA via l'Edge Function Supabase (la clé Anthropic reste
+  // côté serveur, jamais dans le navigateur — voir supabase/functions/claude-chat).
+  if(SUPABASE_READY && sbClient && currentUser){
     var sysPrompt = buildSystemPrompt(ctx)
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 800,
-        system: sysPrompt,
-        messages: [{role:'user', content: msg}]
+    sbClient.auth.getSession().then(function(res){
+      var token = res && res.data && res.data.session && res.data.session.access_token
+      if(!token) throw new Error('no-session')
+      return fetch(SUPABASE_URL + '/functions/v1/claude-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ system: sysPrompt, message: msg })
       })
     })
     .then(function(r){ return r.json() })
     .then(function(data){
-      var texte = ''
-      if(data.content && data.content.length > 0){
-        data.content.forEach(function(b){ if(b.type==='text') texte += b.text })
-      } else if(data.error){
-        texte = null
-      }
-      afficherReponseIA(texte || analyseLocale(ctx, msg), texte ? '🤖 Claude API' : '📊 Analyse locale')
+      afficherReponseIA(data && data.text ? data.text : analyseLocale(ctx, msg), data && data.text ? '🤖 Claude API' : '📊 Analyse locale')
     })
     .catch(function(){
-      // Fallback analyse locale en cas d'erreur réseau
+      // Fallback analyse locale en cas d'erreur réseau ou de service non déployé
       afficherReponseIA(analyseLocale(ctx, msg), '📊 Analyse locale (hors ligne)')
     })
   } else {
@@ -5213,7 +5242,8 @@ function sendChat(){
   }
 }
 
-function escIA(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function esc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+function escIA(t){ return esc(t) }
 
 function afficherReponseIA(html, source){
   var bub = document.getElementById('ia-thinking')
@@ -5551,19 +5581,6 @@ function lancerAnalyseIA(){
   }, 350)
 }
 
-// ── Mettre à jour le panneau d'analyse du jour ───────────────
-function sauvegarderCleAPI(){
-  var cle = document.getElementById('ia-api-key') ? document.getElementById('ia-api-key').value.trim() : ''
-  if(cle && !cle.startsWith('sk-ant-')){
-    alert('Clé API invalide. Elle doit commencer par sk-ant-...')
-    return
-  }
-  try{
-    if(cle) localStorage.setItem('avi_claude_api_key', cle)
-    else localStorage.removeItem('avi_claude_api_key')
-    alert(cle ? '✅ Clé API Claude sauvegardée. L\'agent IA utilisera l\'API réelle.' : 'Clé API supprimée. Mode analyse locale activé.')
-  }catch(e){ alert('Erreur: '+e.message) }
-}
 
 
 // ══════════════════════════════════════════════════════
@@ -5802,10 +5819,10 @@ function rafraichirPageSante(){
         return '<div style="padding:10px 12px;margin-bottom:8px;border-radius:9px;border:1.5px solid '+(bord[e.type]||bord.autre)+';background:'+(bg[e.type]||bg.autre)+'">'
           +'<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">'
           +'<div>'
-          +'<div style="font-size:12.5px;font-weight:700">'+(typeLabel[e.type]||e.type)+' — Bât. '+e.bat+'</div>'
-          +'<div style="font-size:12px;color:var(--gray-600);margin-top:2px">'+e.diagnostic+'</div>'
-          +(e.symptomes?'<div style="font-size:11px;color:var(--gray-500);margin-top:2px">Symptômes : '+e.symptomes+'</div>':'')
-          +(e.produit?'<div style="font-size:11px;color:var(--gray-500);margin-top:2px">Produit : '+e.produit+(e.duree?' · '+e.duree:'')+'</div>':'')
+          +'<div style="font-size:12.5px;font-weight:700">'+(typeLabel[e.type]||e.type)+' — Bât. '+esc(e.bat)+'</div>'
+          +'<div style="font-size:12px;color:var(--gray-600);margin-top:2px">'+esc(e.diagnostic)+'</div>'
+          +(e.symptomes?'<div style="font-size:11px;color:var(--gray-500);margin-top:2px">Symptômes : '+esc(e.symptomes)+'</div>':'')
+          +(e.produit?'<div style="font-size:11px;color:var(--gray-500);margin-top:2px">Produit : '+esc(e.produit)+(e.duree?' · '+esc(e.duree):'')+'</div>':'')
           +'</div>'
           +'<div style="text-align:right;flex-shrink:0">'
           +'<div style="font-size:10.5px;color:var(--gray-400)">'+(e.date||'—')+'</div>'
@@ -5831,8 +5848,8 @@ function rafraichirPageSante(){
         return '<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--gray-100)">'
           +'<div style="width:28px;height:28px;border-radius:7px;background:rgba(59,130,246,.22);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">'+(traitIcones[tKey]||'💊')+'</div>'
           +'<div style="flex:1">'
-          +'<div style="font-size:12.5px;font-weight:700">'+v.produit+'</div>'
-          +'<div style="font-size:11px;color:var(--gray-500)">'+(traitLabels[tKey]||'Traitement')+' · Bât. '+v.bat+' · '+(v.nb?v.nb.toLocaleString('fr-FR')+' sujets':'—')+' · '+(v.date||'—')+'</div>'
+          +'<div style="font-size:12.5px;font-weight:700">'+esc(v.produit)+'</div>'
+          +'<div style="font-size:11px;color:var(--gray-500)">'+(traitLabels[tKey]||'Traitement')+' · Bât. '+esc(v.bat)+' · '+(v.nb?v.nb.toLocaleString('fr-FR')+' sujets':'—')+' · '+esc(v.date||'—')+'</div>'
           +'</div>'
           +'</div>'
       }).join('')
@@ -6634,9 +6651,9 @@ function creerUtilisateur(){
   var tbody = document.querySelector('#page-admin tbody')
   if(tbody){
     var tr = document.createElement('tr')
-    tr.innerHTML = '<td><strong>' + nom + '</strong><br><small style="color:var(--gray-400)">' + email + '</small></td>'
+    tr.innerHTML = '<td><strong>' + esc(nom) + '</strong><br><small style="color:var(--gray-400)">' + esc(email) + '</small></td>'
       + '<td><span class="badge ' + (badgeColors[role]||'b-gray') + '">' + (roles[role]||role) + '</span></td>'
-      + '<td>' + document.getElementById('usr-site').value + '</td>'
+      + '<td>' + esc(document.getElementById('usr-site').value) + '</td>'
       + '<td><span class="badge b-green">Actif</span></td>'
     tbody.insertBefore(tr, tbody.firstChild)
   }
@@ -7156,7 +7173,7 @@ function rafraichirFinance(){
       opsList.innerHTML = FIN.operations.slice(0,5).map(function(o){
         var isRec = o.type==='recette'
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--gray-100)">'
-          +'<div><div style="font-size:12.5px;font-weight:600">'+o.desc+'</div><div style="font-size:10.5px;color:var(--gray-400)">'+o.date+' · '+(CAT_LABELS_FIN[o.cat]||o.cat)+'</div></div>'
+          +'<div><div style="font-size:12.5px;font-weight:600">'+esc(o.desc)+'</div><div style="font-size:10.5px;color:var(--gray-400)">'+esc(o.date)+' · '+(CAT_LABELS_FIN[o.cat]||o.cat)+'</div></div>'
           +'<div style="font-weight:800;color:'+(isRec?'#10B981':'#EF4444')+'">'+(isRec?'+':'-')+o.montant.toLocaleString('fr-FR')+'</div>'
           +'</div>'
       }).join('')
@@ -7177,13 +7194,13 @@ function rafraichirFinance(){
       tbody.innerHTML = ops.map(function(o){
         var isRec = o.type==='recette'
         return '<tr>'
-          +'<td>'+o.date+'</td>'
+          +'<td>'+esc(o.date)+'</td>'
           +'<td><span class="badge '+(isRec?'b-green':'b-red')+'" style="font-size:10px">'+(isRec?'Recette':'Dépense')+'</span></td>'
           +'<td style="font-size:12px;color:var(--gray-500)">'+(CAT_LABELS_FIN[o.cat]||o.cat)+'</td>'
-          +'<td style="font-size:12.5px">'+o.desc+'</td>'
+          +'<td style="font-size:12.5px">'+esc(o.desc)+'</td>'
           +'<td style="font-size:12px">'+(COMPTE_LABELS_FIN[o.compte]||o.compte)+'</td>'
           +'<td style="font-weight:700;color:'+(isRec?'#10B981':'#EF4444')+'">'+(isRec?'+':'-')+o.montant.toLocaleString('fr-FR')+'</td>'
-          +'<td style="font-size:12px">'+o.resp+'</td>'
+          +'<td style="font-size:12px">'+esc(o.resp)+'</td>'
           +'</tr>'
       }).join('')
     }
@@ -7353,8 +7370,8 @@ function rafraichirLogistique(){
       pannesList.innerHTML = LOG.pannes.slice(0,5).map(function(p){
         var g = p.gravite==='grave' ? '🔴' : p.gravite==='moyenne' ? '🟠' : '🟡'
         return '<div style="padding:8px 0;border-bottom:1px solid var(--gray-100)">'
-          +'<div style="font-size:12.5px;font-weight:600">'+g+' '+p.desc+'</div>'
-          +'<div style="font-size:10.5px;color:var(--gray-400)">'+p.date+' · '+(p.lieu||'—')+'</div>'
+          +'<div style="font-size:12.5px;font-weight:600">'+g+' '+esc(p.desc)+'</div>'
+          +'<div style="font-size:10.5px;color:var(--gray-400)">'+esc(p.date)+' · '+esc(p.lieu||'—')+'</div>'
           +'</div>'
       }).join('')
     }
@@ -7368,7 +7385,7 @@ function rafraichirLogistique(){
     } else {
       recusList.innerHTML = LOG.recus.slice(0,5).map(function(r){
         return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--gray-100);font-size:12.5px">'
-          +'<span>'+r.date+' · '+(r.station||'—')+' · '+r.litres+'L</span>'
+          +'<span>'+esc(r.date)+' · '+esc(r.station||'—')+' · '+esc(r.litres)+'L</span>'
           +'<strong>'+(r.montant||0).toLocaleString('fr-FR')+' GNF</strong>'
           +'</div>'
       }).join('')
@@ -7385,8 +7402,8 @@ function rafraichirLogistique(){
     } else {
       voyList.innerHTML = LOG.voyages.slice(0,5).map(function(v){
         return '<div style="padding:7px 0;border-bottom:1px solid var(--gray-100);font-size:12.5px">'
-          +'<div style="font-weight:600">'+v.dest+'</div>'
-          +'<div style="color:var(--gray-400);font-size:10.5px">'+v.date+' · '+(v.chauffeur||'—')+'</div>'
+          +'<div style="font-weight:600">'+esc(v.dest)+'</div>'
+          +'<div style="color:var(--gray-400);font-size:10.5px">'+esc(v.date)+' · '+esc(v.chauffeur||'—')+'</div>'
           +'</div>'
       }).join('')
     }
@@ -7411,12 +7428,12 @@ function rafraichirLogistique(){
     } else {
       tbody.innerHTML = lignes.map(function(l){
         return '<tr>'
-          +'<td>'+l.date+'</td>'
+          +'<td>'+esc(l.date)+'</td>'
           +'<td>'+l.type+'</td>'
-          +'<td style="font-size:12.5px">'+l.desc+'</td>'
-          +'<td style="font-size:12px">'+l.km+'</td>'
+          +'<td style="font-size:12.5px">'+esc(l.desc)+'</td>'
+          +'<td style="font-size:12px">'+esc(l.km)+'</td>'
           +'<td style="font-weight:700">'+(l.cout?l.cout.toLocaleString('fr-FR')+' GNF':'—')+'</td>'
-          +'<td style="font-size:12px">'+l.resp+'</td>'
+          +'<td style="font-size:12px">'+esc(l.resp)+'</td>'
           +'<td><span class="badge b-green" style="font-size:10px">'+l.statut+'</span></td>'
           +'</tr>'
       }).join('')
@@ -7668,7 +7685,7 @@ function rafraichirStock(){
       var stat  = q.qte===0 ? 'b-gray'  : q.qte < p.seuil ? 'b-red' : q.qte < p.seuil*1.5 ? 'b-amber' : 'b-green'
       var statTxt=q.qte===0 ? 'Vide'    : q.qte < p.seuil ? '⚠ Bas'  : q.qte < p.seuil*1.5 ? 'Seuil'   : '✅ OK'
       return '<tr>'
-        +'<td><strong>'+p.nom+'</strong></td>'
+        +'<td><strong>'+esc(p.nom)+'</strong></td>'
         +'<td><span class="badge" style="'+(catColors[p.cat]||'')+';font-size:10px">'+(catLabels[p.cat]||p.cat)+'</span></td>'
         +'<td style="font-size:15px;font-weight:800;color:'+(q.qte===0?'var(--gray-300)':q.qte<p.seuil?'#EF4444':q.qte<p.seuil*1.5?'#F59E0B':'var(--brand)')+'">'+q.qte.toLocaleString('fr-FR')+'</td>'
         +'<td style="font-size:12px;color:var(--gray-500)">'+p.unite+'</td>'
@@ -7687,12 +7704,12 @@ function rafraichirStock(){
       tbodyM.innerHTML = STOCK_MOUVEMENTS.slice(0,30).map(function(m){
         var isIn = m.type==='entree'
         return '<tr>'
-          +'<td>'+m.date+'</td>'
-          +'<td style="font-weight:600">'+m.prodNom+'</td>'
+          +'<td>'+esc(m.date)+'</td>'
+          +'<td style="font-weight:600">'+esc(m.prodNom)+'</td>'
           +'<td><span class="badge '+(isIn?'b-green':'b-red')+'" style="font-size:10px">'+(isIn?'Entrée':'Sortie')+'</span></td>'
-          +'<td style="font-weight:700;color:'+(isIn?'var(--brand)':'#EF4444')+'">'+(isIn?'+':'-')+m.qte.toLocaleString('fr-FR')+' '+m.unite+'</td>'
-          +'<td style="font-size:12px;color:var(--gray-500)">'+m.motif+'</td>'
-          +'<td style="font-size:12px">'+m.resp+'</td>'
+          +'<td style="font-weight:700;color:'+(isIn?'var(--brand)':'#EF4444')+'">'+(isIn?'+':'-')+m.qte.toLocaleString('fr-FR')+' '+esc(m.unite)+'</td>'
+          +'<td style="font-size:12px;color:var(--gray-500)">'+esc(m.motif)+'</td>'
+          +'<td style="font-size:12px">'+esc(m.resp)+'</td>'
           +'</tr>'
       }).join('')
     }
@@ -7844,24 +7861,24 @@ function rafraichirPDV(){
       var commLabels={salarie:'Salarié',commission:'Commission',gerant_libre:'Gérant libre'}
       grille.innerHTML = POINTS_DE_VENTE.map(function(p){
         var isActif = p.statut==='actif'
-        var prods = (p.produits||[]).map(function(id){
+        var prods = esc((p.produits||[]).map(function(id){
           var pp=POS_CATALOGUE.find(function(x){return x.id===id}); return pp?pp.nom.split(' ').slice(0,2).join(' '):id
-        }).slice(0,4).join(' · ')
+        }).slice(0,4).join(' · '))
         return '<div style="background:white;border:1.5px solid var(--gray-200);border-radius:14px;overflow:hidden">'
           // En-tête coloré
           +'<div style="background:linear-gradient(135deg,'+(isActif?'var(--brand),#0D7558':'#6B7280,#4B5563')+');padding:14px 16px;color:white">'
           +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">'
-          +'<div style="font-size:15px;font-weight:800">🏪 '+p.nom+'</div>'
+          +'<div style="font-size:15px;font-weight:800">🏪 '+esc(p.nom)+'</div>'
           +'<span style="padding:3px 10px;background:rgba(255,255,255,.2);border-radius:12px;font-size:11px">'+(isActif?'✅ Actif':'⛔ Inactif')+'</span>'
           +'</div>'
-          +'<div style="font-size:12px;opacity:.85">📍 '+p.zone+(p.adresse?' · '+p.adresse:'')+'</div>'
+          +'<div style="font-size:12px;opacity:.85">📍 '+esc(p.zone)+(p.adresse?' · '+esc(p.adresse):'')+'</div>'
           +'</div>'
           // Corps
           +'<div style="padding:12px 16px">'
           +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
           +'<div style="width:34px;height:34px;background:var(--brand-light,#E8FAF3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--brand);flex-shrink:0">'+(p.gerantNom||'?').split(' ').map(function(w){return w[0]}).join('').slice(0,2).toUpperCase()+'</div>'
-          +'<div><div style="font-size:13px;font-weight:700">'+p.gerantNom+'</div>'
-          +'<div style="font-size:11.5px;color:var(--gray-400)">'+(p.gerantTel?'📞 '+p.gerantTel+' · ':'')+commLabels[p.commission||'salarie']+'</div></div>'
+          +'<div><div style="font-size:13px;font-weight:700">'+esc(p.gerantNom)+'</div>'
+          +'<div style="font-size:11.5px;color:var(--gray-400)">'+(p.gerantTel?'📞 '+esc(p.gerantTel)+' · ':'')+commLabels[p.commission||'salarie']+'</div></div>'
           +'</div>'
           // Produits
           +'<div style="margin-bottom:10px">'
@@ -7897,9 +7914,9 @@ function rafraichirPDV(){
       tbody.innerHTML = POINTS_DE_VENTE.map(function(p){
         var prodsCount = (p.produits||[]).length
         return '<tr>'
-          +'<td><strong>'+p.nom+'</strong></td>'
-          +'<td>'+p.gerantNom+'<br><small style="color:var(--gray-400)">'+( p.gerantTel||'—')+'</small></td>'
-          +'<td>'+p.zone+'</td>'
+          +'<td><strong>'+esc(p.nom)+'</strong></td>'
+          +'<td>'+esc(p.gerantNom)+'<br><small style="color:var(--gray-400)">'+esc(p.gerantTel||'—')+'</small></td>'
+          +'<td>'+esc(p.zone)+'</td>'
           +'<td>'+prodsCount+' produit(s)</td>'
           +'<td style="font-weight:700;color:var(--brand)">'+(p.ventes?p.ventes.length:0)+'</td>'
           +'<td style="font-weight:700;color:#10B981">'+(p.ca>0?p.ca.toLocaleString('fr-FR')+' GNF':'0 GNF')+'</td>'
@@ -8706,9 +8723,9 @@ function rafraichirCommerce(){
       tbodyCl.innerHTML = COMMERCE.clients.map(function(cl){
         var lastFact = COMMERCE.factures.filter(function(f){return f.clientId===cl.id})[0]
         return '<tr>'
-          +'<td style="position:sticky;left:0;background:var(--white);z-index:1"><strong>'+cl.nom+'</strong>'+(cl.adresse?'<br><small style="color:var(--gray-400)">'+cl.adresse+'</small>':'')+'</td>'
-          +'<td>📞 '+cl.tel+'</td>'
-          +'<td>'+( cl.zone||'—')+'</td>'
+          +'<td style="position:sticky;left:0;background:var(--white);z-index:1"><strong>'+esc(cl.nom)+'</strong>'+(cl.adresse?'<br><small style="color:var(--gray-400)">'+esc(cl.adresse)+'</small>':'')+'</td>'
+          +'<td>📞 '+esc(cl.tel)+'</td>'
+          +'<td>'+esc(cl.zone||'—')+'</td>'
           +'<td><span class="badge b-blue" style="font-size:10px">'+(typeLabels[cl.type]||cl.type)+'</span></td>'
           +'<td style="font-weight:700;color:'+(cl.solde>0?'#EF4444':'#10B981')+'">'+( cl.solde>0?cl.solde.toLocaleString('fr-FR')+' GNF':'✅ À jour')+'</td>'
           +'<td style="font-size:12px;color:var(--gray-500)">'+(lastFact?lastFact.date:'—')+'</td>'
@@ -8729,11 +8746,11 @@ function rafraichirCommerce(){
       tbodyFact.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--gray-400);padding:20px">Aucune facture</td></tr>'
     } else {
       tbodyFact.innerHTML = facts.map(function(f){
-        var prods = f.lignes.map(function(l){return l.nom.split(' ').slice(0,2).join(' ')}).slice(0,2).join(', ')
+        var prods = esc(f.lignes.map(function(l){return l.nom.split(' ').slice(0,2).join(' ')}).slice(0,2).join(', '))
         return '<tr>'
-          +'<td style="font-family:monospace;font-size:12px">'+f.num+'</td>'
-          +'<td>'+f.date+'</td>'
-          +'<td style="font-weight:600">'+f.clientNom+'</td>'
+          +'<td style="font-family:monospace;font-size:12px">'+esc(f.num)+'</td>'
+          +'<td>'+esc(f.date)+'</td>'
+          +'<td style="font-weight:600">'+esc(f.clientNom)+'</td>'
           +'<td style="font-size:12px;color:var(--gray-500)">'+prods+'</td>'
           +'<td style="font-weight:700">'+f.total.toLocaleString('fr-FR')+' GNF</td>'
           +'<td style="color:#10B981;font-weight:700">'+( f.acompte>0?f.acompte.toLocaleString('fr-FR')+' GNF':'—')+'</td>'
@@ -8760,14 +8777,14 @@ function rafraichirCommerce(){
       tbodyBDC.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--gray-400);padding:20px">Aucun bon de commande</td></tr>'
     } else {
       tbodyBDC.innerHTML = bdcs.map(function(b){
-        var prods = b.lignes.map(function(l){return l.nom.split(' ').slice(0,2).join(' ')}).slice(0,2).join(', ')
+        var prods = esc(b.lignes.map(function(l){return l.nom.split(' ').slice(0,2).join(' ')}).slice(0,2).join(', '))
         return '<tr>'
-          +'<td style="font-family:monospace;font-size:12px">'+b.num+'</td>'
-          +'<td>'+b.date+'</td>'
-          +'<td style="font-weight:600">'+b.clientNom+'</td>'
+          +'<td style="font-family:monospace;font-size:12px">'+esc(b.num)+'</td>'
+          +'<td>'+esc(b.date)+'</td>'
+          +'<td style="font-weight:600">'+esc(b.clientNom)+'</td>'
           +'<td style="font-size:12px;color:var(--gray-500)">'+prods+'</td>'
           +'<td style="font-weight:700">'+b.total.toLocaleString('fr-FR')+' GNF</td>'
-          +'<td>'+(b.livraison||'—')+'</td>'
+          +'<td>'+esc(b.livraison||'—')+'</td>'
           +'<td><span class="badge '+(statBDCCols[b.statut]||'b-gray')+'" style="font-size:10px">'+(statBDCLbls[b.statut]||b.statut)+'</span></td>'
           +'<td style="display:flex;gap:4px">'
           +'<button class="btn btn-d btn-sm" data-id="'+b.id+'" onclick="printBDCById(this.dataset.id)" style="font-size:11px">&#128424;</button>'
@@ -9009,27 +9026,23 @@ function changerMotDePasse(){
   if(!/[A-Z]/.test(nouveau)){ showFb('❌ Au moins une majuscule requise.', false); return }
   if(!/[0-9]/.test(nouveau)){ showFb('❌ Au moins un chiffre requis.', false); return }
 
-  // Récupérer le hash du mot de passe actuel de cet utilisateur
   var emailActuel = (typeof currentUser !== 'undefined' && currentUser && currentUser.email) ? currentUser.email : ''
   if(!emailActuel){ showFb('❌ Session expirée, reconnectez-vous.', false); return }
-  var mdpHashRef = (MDP_HASH_PAR_USER[emailActuel]) || ''
-  try { mdpHashRef = localStorage.getItem('avi_mdp_hash_' + emailActuel) || mdpHashRef } catch(e){}
+  if(!sbClient){ showFb('❌ Connexion sécurisée non configurée.', false); return }
 
-  sha256(actuel).then(function(hashActuel){
-    if(hashActuel !== mdpHashRef){ showFb('❌ Mot de passe actuel incorrect.', false); return }
-    return sha256(nouveau)
-  }).then(function(hashNouveau){
-    if(!hashNouveau) return
-    localStorage.setItem('avi_mdp_hash_' + emailActuel, hashNouveau)
-    ;['mdp-actuel','mdp-nouveau','mdp-confirm'].forEach(function(id){
-      var el=document.getElementById(id); if(el) el.value=''
+  // Ré-authentification avec le mot de passe actuel avant tout changement
+  sbClient.auth.signInWithPassword({ email: emailActuel, password: actuel }).then(function(res){
+    if(res.error){ showFb('❌ Mot de passe actuel incorrect.', false); return }
+    return sbClient.auth.updateUser({ password: nouveau }).then(function(res2){
+      if(res2.error){ showFb('❌ ' + res2.error.message, false); return }
+      ;['mdp-actuel','mdp-nouveau','mdp-confirm'].forEach(function(id){
+        var el=document.getElementById(id); if(el) el.value=''
+      })
+      showFb('✅ Mot de passe changé avec succès !', true)
+      afficherToast('🔑 Mot de passe mis à jour', 'Nouveau mot de passe enregistré côté serveur (Supabase Auth).')
     })
-    showFb('✅ Mot de passe changé avec succès !', true)
-    afficherToast('🔑 Mot de passe mis à jour', 'Nouveau mot de passe enregistré de façon sécurisée.')
   }).catch(function(){ showFb('❌ Erreur lors du changement.', false) })
 }
-
-// MDP chargé depuis localStorage dans setDemo/doLogin
 
 // ── Timeout de session automatique (30 min d'inactivité) ──────
 var _sessionTimer = null
