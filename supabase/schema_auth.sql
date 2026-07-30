@@ -32,19 +32,42 @@ create policy "profiles_update_own"
   using (auth.uid() = id)
   with check (auth.uid() = id);
 
--- ── Étapes manuelles (dans le Dashboard Supabase, pas en SQL) ──────────
--- 1. Authentication → Users → Add user, pour chacun des 4 comptes :
---      barrysadio0@gmail.com / hhaba@avimanager.sn /
---      arabioubah@avimanager.sn / ambarry@avimanager.sn
---    → cocher "Auto Confirm User", définir un NOUVEAU mot de passe
---      (ne pas réutiliser Barry2025! / Pro-serv1 / Bah2025! / Moron2025! —
---      ces mots de passe par défaut ont été exposés dans le code source).
--- 2. Copier l'UUID généré pour chaque utilisateur (colonne "id" dans la
---    liste Authentication → Users), puis exécuter ci-dessous en remplaçant
---    les UUID_xxx par les vrais UUID :
+-- ── Comptes (Authentication → Users), un par rôle ───────────────────────
+--   pdg@pro-services-univers.com        → Amadou Sadio Barry (PDG)
+--   production@pro-services-univers.com → Honore Doré (Production & Sanitaire)
+--   finance@pro-services-univers.com    → Arabiou Bah (Finance & Commerce)
+--   stock@pro-services-univers.com      → Amadou Moron Barry (Stock)
+--
+-- Lier les profils par email (pas besoin de copier les UUID à la main,
+-- auth.users est interrogeable depuis le SQL Editor) :
 
--- insert into public.profiles (id, email, name, tel, role, init) values
---   ('UUID_1', 'barrysadio0@gmail.com',    'Amadou Sadio Barry', '621989823', 'PDG Directeur General',              'ASB'),
---   ('UUID_2', 'hhaba@avimanager.sn',      'Honore Doré',        '625171922', 'Resp. Production et Suivi Sanitaire','HD'),
---   ('UUID_3', 'arabioubah@avimanager.sn', 'Arabiou Bah',        '629481997', 'Resp. Finance et Commerce',          'ABH'),
---   ('UUID_4', 'ambarry@avimanager.sn',    'Amadou Moron Barry', '621540515', 'Responsable Stock',                  'AMB');
+insert into public.profiles (id, email, name, tel, role, init)
+select id, email,
+  case email
+    when 'pdg@pro-services-univers.com'        then 'Amadou Sadio Barry'
+    when 'production@pro-services-univers.com' then 'Honore Doré'
+    when 'finance@pro-services-univers.com'    then 'Arabiou Bah'
+    when 'stock@pro-services-univers.com'      then 'Amadou Moron Barry'
+  end,
+  case email
+    when 'pdg@pro-services-univers.com'        then '621989823'
+    when 'production@pro-services-univers.com' then '625171922'
+    when 'finance@pro-services-univers.com'    then '629481997'
+    when 'stock@pro-services-univers.com'      then '621540515'
+  end,
+  case email
+    when 'pdg@pro-services-univers.com'        then 'PDG Directeur General'
+    when 'production@pro-services-univers.com' then 'Resp. Production et Suivi Sanitaire'
+    when 'finance@pro-services-univers.com'    then 'Resp. Finance et Commerce'
+    when 'stock@pro-services-univers.com'      then 'Responsable Stock'
+  end,
+  case email
+    when 'pdg@pro-services-univers.com'        then 'ASB'
+    when 'production@pro-services-univers.com' then 'HD'
+    when 'finance@pro-services-univers.com'    then 'ABH'
+    when 'stock@pro-services-univers.com'      then 'AMB'
+  end
+from auth.users
+where email in ('pdg@pro-services-univers.com','production@pro-services-univers.com','finance@pro-services-univers.com','stock@pro-services-univers.com')
+on conflict (id) do update set
+  name = excluded.name, tel = excluded.tel, role = excluded.role, init = excluded.init;
