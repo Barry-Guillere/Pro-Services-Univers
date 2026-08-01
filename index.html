@@ -41,10 +41,10 @@
   
   --gray-600:#B0B0B0;--gray-700:#D0D0D0;--gray-900:#EDEDED;
   --red:#EF4444;--amber:#F59E0B;--blue:#3B82F6;--purple:#8B5CF6;
-  --sidebar:220px
+  --sidebar:220px;--app-max:1180px
 
 }
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--gray-900);font-size:13px;line-height:1.5}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--gray-900);font-size:13px;line-height:1.5}
 
 /* ── LOGIN ── */
 #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#141414,#1E1E1E 50%,#161616)}
@@ -72,7 +72,7 @@ input:focus{border-color:var(--brand)}
 .layout{display:block}
 
 /* ── SIDEBAR ── */
-.sidebar{width:var(--sidebar);background:var(--white);border-right:1px solid var(--gray-100);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;height:100dvh;z-index:500;overflow-y:auto}
+.sidebar{width:var(--sidebar);background:var(--white);border-right:1px solid var(--gray-100);display:flex;flex-direction:column;position:fixed;top:0;left:max(0px,calc((100vw - var(--app-max)) / 2));height:100vh;height:100dvh;z-index:500;overflow-y:auto}
 .sb-logo{padding:16px 18px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;gap:10px}
 .sb-logo-icon{width:30px;height:30px;background:var(--brand);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .sb-logo-icon svg{width:17px;height:17px;fill:white}
@@ -94,7 +94,7 @@ input:focus{border-color:var(--brand)}
 .sb-logout:hover{background:var(--gray-100);color:var(--red)}
 
 /* ── MAIN (défilement NORMAL de la page entière, plus fiable) ── */
-.main{margin-left:var(--sidebar);background:var(--bg);min-height:100vh;min-height:100dvh}
+.main{margin-left:calc(var(--sidebar) + max(0px,calc((100vw - var(--app-max)) / 2)));margin-right:max(0px,calc((100vw - var(--app-max)) / 2));background:var(--bg);min-height:100vh;min-height:100dvh}
 html::-webkit-scrollbar{width:14px}
 html::-webkit-scrollbar-track{background:var(--gray-50)}
 html::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:8px;border:3px solid var(--gray-50)}
@@ -4048,12 +4048,15 @@ function refreshDashboard(){
     S.n++
     S.prevRateA=S.rateA; S.prevRateB=S.rateB; S.prevRateC=S.rateC; S.prevCa=S.ca
 
-    // Nouvelles valeurs (variations réalistes)
-    S.rateA = rnd(83.8,86.8)
-    S.rateB = rnd(76.5,81.5)
-    S.rateC = rnd(81.2,85.0)
-    S.ca    = Math.round(S.ca*(rnd(0.94,1.10)))
-    S.tres  = Math.round(S.tres+(Math.random()-.4)*90000)
+    // Recharger les valeurs réelles depuis les modules (ponte, finance)
+    S.rateA = PONTES_SESSION.a ? PONTES_SESSION.a.taux : 0
+    S.rateB = PONTES_SESSION.b ? PONTES_SESSION.b.taux : 0
+    S.rateC = PONTES_SESSION.c ? PONTES_SESSION.c.taux : 0
+    if(typeof FIN !== 'undefined'){
+      S.tres = (FIN.soldes.caisse||0)+(FIN.soldes.banque||0)+(FIN.soldes.mobile||0)
+      var todayStr2 = new Date().toISOString().split('T')[0]
+      S.ca = (FIN.operations||[]).filter(function(o){ return o.type==='recette' && o.date===todayStr2 }).reduce(function(s,o){ return s+(o.montant||0) },0)
+    }
 
     const globalRate=(S.rateA+S.rateB+S.rateC)/3
     const prevGlobal=(S.prevRateA+S.prevRateB+S.prevRateC)/3
@@ -4061,7 +4064,7 @@ function refreshDashboard(){
     const caChange=S.ca-S.prevCa
 
     // ── KPI TAUX DE PONTE ──────────────────────
-    setKpi('kv-rate', globalRate.toFixed(1)+'%',
+    setKpi('kv-rate', globalRate>0 ? globalRate.toFixed(1)+'%' : '—',
       globalRate>=82?'#059669':'#DC2626')
     setDelta('kd-rate',
       (rateChange>=0?'▲ +':'▼ ')+Math.abs(rateChange).toFixed(1)+'% vs rafraîchissement précédent',
@@ -4069,21 +4072,22 @@ function refreshDashboard(){
     flashCard('kc-rate', globalRate>=82?'flash-green':'flash-red')
 
     // ── KPI CA ─────────────────────────────────
-    setKpi('kv-ca', fmt(S.ca))
+    setKpi('kv-ca', S.ca>0 ? fmt(S.ca)+' GNF' : '0 GNF')
     setDelta('kd-ca',
       (caChange>=0?'▲ +':'▼ ')+fmt(Math.abs(caChange))+' F vs précédent',
       caChange>=0?'up':'down')
     flashCard('kc-ca','flash-green')
 
     // ── KPI TRÉSORERIE ─────────────────────────
-    setKpi('kv-tres', fmt(S.tres))
+    setKpi('kv-tres', S.tres>0 ? fmt(S.tres)+' GNF' : '—')
     setDelta('kd-tres', 'Mis à jour à '+hms(), 'neutral')
     flashCard('kc-tres','flash-green')
 
     // ── KPI ŒUFS ───────────────────────────────
-    const newOeufs=Math.round(S.rateA/100*8190+S.rateB/100*8370+S.rateC/100*8190)
-    setKpi('kv-oeufs', fmt(newOeufs))
-    setDelta('kd-oeufs', fmt(Math.round(newOeufs*.974))+' marchands', 'up')
+    const newOeufs = PONTES_SESSION.a&&PONTES_SESSION.b&&PONTES_SESSION.c ?
+      (PONTES_SESSION.a.total*30)+(PONTES_SESSION.b.total*30)+(PONTES_SESSION.c.total*30) : 0
+    setKpi('kv-oeufs', newOeufs>0 ? fmt(newOeufs) : '—')
+    if(newOeufs>0) setDelta('kd-oeufs', fmt(Math.round(newOeufs*.974))+' marchands', 'up')
 
     // ── BÂTIMENTS ──────────────────────────────
     renderBuildings()
@@ -4250,9 +4254,11 @@ function initDashboard(){
   var rC = PONTES_SESSION.c ? PONTES_SESSION.c.taux : 0
   S.rateA = rA; S.rateB = rB; S.rateC = rC
 
-  // Mise à jour trésorerie depuis Finance
+  // Mise à jour trésorerie et CA du jour depuis Finance
   if(typeof FIN !== 'undefined'){
     S.tres = (FIN.soldes.caisse||0)+(FIN.soldes.banque||0)+(FIN.soldes.mobile||0)
+    var todayStr = new Date().toISOString().split('T')[0]
+    S.ca = (FIN.operations||[]).filter(function(o){ return o.type==='recette' && o.date===todayStr }).reduce(function(s,o){ return s+(o.montant||0) },0)
   }
 
   // Afficher les KPIs
@@ -5684,7 +5690,7 @@ function ouvrirModalMortalite(){
 function enregistrerEvenementSante(){
   var diagnostic = (document.getElementById('sante-diagnostic')||{}).value.trim()
   if(!diagnostic){ alert('Merci de renseigner le diagnostic / observation.'); return }
-  SANTE_EVENTS.unshift({
+  var evt = {
     id: Date.now(),
     date: (document.getElementById('sante-date')||{}).value,
     bat: (document.getElementById('sante-bat')||{}).value || 'A',
@@ -5698,7 +5704,25 @@ function enregistrerEvenementSante(){
     cout: parseInt((document.getElementById('sante-cout')||{}).value)||0,
     notes: (document.getElementById('sante-notes')||{}).value.trim(),
     statut: 'en_cours'
-  })
+  }
+  SANTE_EVENTS.unshift(evt)
+
+  // ── Connexion automatique vers Finance : coût du traitement ──
+  if(evt.cout > 0 && typeof FIN !== 'undefined'){
+    FIN.soldes.caisse = (FIN.soldes.caisse||0) - evt.cout
+    FIN.operations.unshift({
+      id: Date.now()+1,
+      date: evt.date,
+      type: 'depense',
+      cat: 'veterinaire',
+      desc: 'Traitement — '+diagnostic+' (Bât. '+evt.bat+')',
+      compte: 'caisse',
+      montant: evt.cout,
+      resp: currentUser ? (currentUser.name||'') : 'Admin'
+    })
+    try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
+  }
+
   var msg = document.getElementById('sante-success')
   if(msg){ msg.style.display='block'; setTimeout(function(){ msg.style.display='none' },2000) }
   setTimeout(function(){ document.getElementById('modal-sante').classList.remove('open') }, 700)
@@ -6582,6 +6606,43 @@ function enregistrerCarburant(){
     return
   }
   document.getElementById('fuel-litres').style.borderColor = ''
+
+  var date    = (document.getElementById('fuel-date')||{}).value || new Date().toISOString().split('T')[0]
+  var prix    = parseFloat((document.getElementById('fuel-prix')||{}).value) || 0
+  var vehicule= (document.getElementById('fuel-vehicule')||{}).value || ''
+  var km      = (document.getElementById('fuel-km')||{}).value || ''
+  var station = (document.getElementById('fuel-station')||{}).value || ''
+  var montant = Math.round(litres*prix)
+
+  if(typeof LOG !== 'undefined'){
+    if(!LOG.recus) LOG.recus=[]
+    LOG.recus.unshift({
+      id:Date.now(), date:date, litres:litres, montant:montant,
+      station:station,
+      notes:(vehicule?'Véhicule: '+vehicule+' ':'')+(km?'· Km: '+km:'')
+    })
+    if(km) LOG.kmActuel = parseInt(km) || LOG.kmActuel
+
+    // ── Connexion automatique vers Finance : coût du carburant ──
+    if(montant > 0 && typeof FIN !== 'undefined'){
+      FIN.soldes.caisse = (FIN.soldes.caisse||0) - montant
+      FIN.operations.unshift({
+        id: Date.now()+1,
+        date: date,
+        type: 'depense',
+        cat: 'carburant',
+        desc: 'Carburant'+(vehicule?' — '+vehicule:'')+(station?' ('+station+')':''),
+        compte: 'caisse',
+        montant: montant,
+        resp: currentUser ? (currentUser.name||'') : 'Admin'
+      })
+      try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
+    }
+
+    setTimeout(autosave, 100)
+    try{ rafraichirLogistique() }catch(e){}
+  }
+
   showSuccess('fuel-success', 2000)
   setTimeout(function(){ fermerModal('modal-carburant') }, 2200)
 }
@@ -7252,6 +7313,23 @@ function enregistrerVoyage(){
   LOG.kmActuel = km
   LOG.voyTotal = (LOG.voyTotal||0) + 1
   LOG.voyDepuis = (LOG.voyDepuis||0) + 1
+
+  // ── Connexion automatique vers Finance : coût du voyage ──
+  if(voyage.cout > 0 && typeof FIN !== 'undefined'){
+    FIN.soldes.caisse = (FIN.soldes.caisse||0) - voyage.cout
+    FIN.operations.unshift({
+      id: Date.now()+1,
+      date: voyage.date,
+      type: 'depense',
+      cat: 'carburant',
+      desc: 'Voyage — '+dest+(voyage.chauffeur?' ('+voyage.chauffeur+')':''),
+      compte: 'caisse',
+      montant: voyage.cout,
+      resp: currentUser ? (currentUser.name||'') : 'Admin'
+    })
+    try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
+  }
+
   document.getElementById('modal-voyage').classList.remove('open')
   rafraichirLogistique()
   try{ autosave() }catch(e){}
@@ -7261,7 +7339,7 @@ function enregistrerPanne(){
   var desc = document.getElementById('panne-desc').value.trim()
   var type = document.getElementById('panne-type').value
   if(!desc || !type){ alert('Renseigne le type et la description de la panne.'); return }
-  LOG.pannes.unshift({
+  var panne = {
     id: Date.now(),
     date: document.getElementById('panne-date').value,
     gravite: document.getElementById('panne-gravite').value,
@@ -7271,7 +7349,25 @@ function enregistrerPanne(){
     par: document.getElementById('panne-par').value,
     cout: parseFloat(document.getElementById('panne-cout').value) || 0,
     statut: 'en_cours'
-  })
+  }
+  LOG.pannes.unshift(panne)
+
+  // ── Connexion automatique vers Finance : coût de la réparation ──
+  if(panne.cout > 0 && typeof FIN !== 'undefined'){
+    FIN.soldes.caisse = (FIN.soldes.caisse||0) - panne.cout
+    FIN.operations.unshift({
+      id: Date.now()+1,
+      date: panne.date,
+      type: 'depense',
+      cat: 'materiel',
+      desc: 'Panne — '+desc,
+      compte: 'caisse',
+      montant: panne.cout,
+      resp: currentUser ? (currentUser.name||'') : 'Admin'
+    })
+    try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
+  }
+
   document.getElementById('modal-panne').classList.remove('open')
   rafraichirLogistique()
   try{ autosave() }catch(e){}
@@ -7550,11 +7646,29 @@ function enregistrerEntreeStock(){
     resp:currentUser?(currentUser.name||''):'Admin'
   })
 
+  // ── Connexion automatique vers Finance : achat de stock ──
+  var montantAchat = Math.round(qte*prix)
+  if(montantAchat > 0 && typeof FIN !== 'undefined'){
+    FIN.soldes.caisse = (FIN.soldes.caisse||0) - montantAchat
+    FIN.operations.unshift({
+      id: Date.now()+1,
+      date: document.getElementById('stk-in-date').value,
+      type: 'depense',
+      cat: (prod && prod.cat==='aliment') ? 'aliment' : 'autre',
+      desc: 'Achat stock — '+(prod?prod.nom:prodId)+' ('+qte+' '+(prod?prod.unite:'')+' × '+prix.toLocaleString('fr-FR')+' GNF)',
+      compte: 'caisse',
+      montant: montantAchat,
+      resp: currentUser ? (currentUser.name||'') : 'Admin'
+    })
+    try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
+  }
+
   document.getElementById('modal-entree-stock').classList.remove('open')
   setTimeout(autosave, 100)
   rafraichirStock()
   var nomProd = prod?prod.nom:prodId
-  alert('Entrée enregistrée : +'+qte.toLocaleString('fr-FR')+' '+(prod?prod.unite:'kg')+' de '+nomProd)
+  var msgFinanceIn = montantAchat>0 ? '\n💸 Dépense de '+montantAchat.toLocaleString('fr-FR')+' GNF enregistrée automatiquement en Finance.' : ''
+  alert('Entrée enregistrée : +'+qte.toLocaleString('fr-FR')+' '+(prod?prod.unite:'kg')+' de '+nomProd+msgFinanceIn)
 }
 
 // ── Enregistrer une sortie ────────────────────────────────
