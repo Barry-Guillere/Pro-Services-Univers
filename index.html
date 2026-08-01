@@ -8073,7 +8073,7 @@ function genererHTMLFacture(d){
     var pu  = it.price.toLocaleString('fr-FR')
     var tot = (it.price*it.qty).toLocaleString('fr-FR')
     return '<tr>'
-      +'<td style="padding:9px 12px;border-bottom:1px solid #E5E7EB;font-size:13px">'+it.name+'</td>'
+      +'<td style="padding:9px 12px;border-bottom:1px solid #E5E7EB;font-size:13px">'+esc(it.name)+'</td>'
       +'<td style="padding:9px 12px;border-bottom:1px solid #E5E7EB;text-align:center;font-size:13px">'+it.qty+'</td>'
       +'<td style="padding:9px 12px;border-bottom:1px solid #E5E7EB;text-align:right;font-size:13px">'+pu+'</td>'
       +'<td style="padding:9px 12px;border-bottom:1px solid #E5E7EB;text-align:right;font-size:13px;font-weight:700">'+tot+' GNF</td>'
@@ -8081,7 +8081,7 @@ function genererHTMLFacture(d){
   }).join('')
 
   return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
-    +'<title>Facture '+d.numFact+'</title>'
+    +'<title>Facture '+esc(d.numFact)+'</title>'
     +'<style>'
     +'*{box-sizing:border-box;margin:0;padding:0}'
     +'body{font-family:Arial,Helvetica,sans-serif;color:#111827;background:#fff;font-size:13px}'
@@ -8133,13 +8133,13 @@ function genererHTMLFacture(d){
     +'<div class="fact-header">'
     +'<img src="'+LOGO_B64+'" class="fact-logo" alt="PSU">'
     +'<div class="fact-societe">'
-    +'<h1>'+d.nomFerme+'</h1>'
-    +'<p>'+d.adresse+'<br>📞 '+d.telephone+'<br>✉ '+d.email+'</p>'
+    +'<h1>'+esc(d.nomFerme)+'</h1>'
+    +'<p>'+esc(d.adresse)+'<br>📞 '+esc(d.telephone)+'<br>✉ '+esc(d.email)+'</p>'
     +'</div>'
     +'<div class="fact-num-block">'
     +'<div class="fact-label">Facture</div>'
-    +'<div class="fact-num">'+d.numFact+'</div>'
-    +'<div class="fact-date">'+d.date+'<br>'+d.heure+'</div>'
+    +'<div class="fact-num">'+esc(d.numFact)+'</div>'
+    +'<div class="fact-date">'+esc(d.date)+'<br>'+esc(d.heure)+'</div>'
     +'</div>'
     +'</div>'
 
@@ -8147,10 +8147,10 @@ function genererHTMLFacture(d){
     +'<div class="fact-client">'
     +'<div class="fact-client-box">'
     +'<h3>Facturé à</h3>'
-    +'<p>'+d.clientNom+'</p>'
-    +(d.clientTel?'<small>📞 '+d.clientTel+'</small>':'<small style="color:#D1D5DB">Téléphone non renseigné</small>')
+    +'<p>'+esc(d.clientNom)+'</p>'
+    +(d.clientTel?'<small>📞 '+esc(d.clientTel)+'</small>':'<small style="color:#D1D5DB">Téléphone non renseigné</small>')
     +'</div>'
-    +(d.pdvNom?'<div class="fact-pdv-box"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Point de vente</div><div style="font-weight:700">🏪 '+d.pdvNom+'</div><div>'+d.pdvZone+'</div></div>':'')
+    +(d.pdvNom?'<div class="fact-pdv-box"><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Point de vente</div><div style="font-weight:700">🏪 '+esc(d.pdvNom)+'</div><div>'+esc(d.pdvZone)+'</div></div>':'')
     +'</div>'
 
     // Tableau articles
@@ -8171,14 +8171,14 @@ function genererHTMLFacture(d){
     // Signatures
     +'<div class="fact-signs">'
     +'<div class="sign-col"><div class="sign-line"></div><div class="sign-label">Signature du vendeur</div><div class="sign-sub">Pro-Services Univers</div></div>'
-    +'<div class="sign-col"><div class="sign-line"></div><div class="sign-label">Signature du client</div><div class="sign-sub">'+d.clientNom+'</div></div>'
+    +'<div class="sign-col"><div class="sign-line"></div><div class="sign-label">Signature du client</div><div class="sign-sub">'+esc(d.clientNom)+'</div></div>'
     +'</div>'
 
     // Pied
     +'<div class="fact-footer">'
     +'<img src="'+LOGO_B64+'" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:5px">'
     +'<strong>Pro-Services Univers</strong> — AviManager Pro<br>'
-    +'Merci pour votre confiance • '+d.nomFerme+' • '+d.adresse
+    +'Merci pour votre confiance • '+esc(d.nomFerme)+' • '+esc(d.adresse)
     +'</div>'
 
     +'</div></body></html>'
