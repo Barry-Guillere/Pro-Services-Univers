@@ -335,6 +335,7 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
   .page{padding:20px 10px 26px !important}
   .page-header{flex-direction:column !important;align-items:stretch !important;gap:10px !important}
   .kpi-grid.c4,.kpi-grid.c3{grid-template-columns:repeat(2,1fr) !important}
+  .rap-grid{grid-template-columns:repeat(2,1fr) !important}
   .g2,.g21,.g12,.g3{grid-template-columns:1fr !important}
   .demo-grid{grid-template-columns:1fr !important}
   .mf-row{grid-template-columns:1fr !important}
@@ -1751,30 +1752,30 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
   </div>
 
   <!-- 4 types de rapport -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">
-    <div onclick="genererRapportPDF('hebdo')" style="background:white;border:2px solid #1D9E75;border-radius:14px;padding:18px;text-align:center;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(29,158,117,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
-      <div style="font-size:30px;margin-bottom:8px">📅</div>
-      <div style="font-size:15px;font-weight:800;color:var(--gray-900,#111827);margin-bottom:4px">Hebdomadaire</div>
-      <div style="font-size:11.5px;color:var(--gray-500,#6B7280);margin-bottom:12px">Semaine en cours</div>
-      <button style="width:100%;padding:8px;background:#1D9E75;color:white;border:none;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">📥 Générer PDF</button>
+  <div class="rap-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
+    <div onclick="genererRapportPDF('hebdo')" style="background:white;border:1.5px solid #1D9E75;border-radius:11px;padding:12px;text-align:center;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(29,158,117,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div style="font-size:20px;margin-bottom:5px">📅</div>
+      <div style="font-size:12.5px;font-weight:800;color:var(--gray-900,#111827);margin-bottom:2px">Hebdomadaire</div>
+      <div style="font-size:10px;color:var(--gray-500,#6B7280);margin-bottom:8px">Semaine en cours</div>
+      <button style="width:100%;padding:6px;background:#1D9E75;color:white;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">📥 Générer PDF</button>
     </div>
-    <div onclick="genererRapportPDF('mensuel')" style="background:white;border:2px solid #3B82F6;border-radius:14px;padding:18px;text-align:center;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(59,130,246,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
-      <div style="font-size:30px;margin-bottom:8px">📆</div>
-      <div style="font-size:15px;font-weight:800;color:var(--gray-900,#111827);margin-bottom:4px">Mensuel</div>
-      <div style="font-size:11.5px;color:var(--gray-500,#6B7280);margin-bottom:12px">Mois en cours</div>
-      <button style="width:100%;padding:8px;background:#3B82F6;color:white;border:none;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">📥 Générer PDF</button>
+    <div onclick="genererRapportPDF('mensuel')" style="background:white;border:1.5px solid #3B82F6;border-radius:11px;padding:12px;text-align:center;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(59,130,246,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div style="font-size:20px;margin-bottom:5px">📆</div>
+      <div style="font-size:12.5px;font-weight:800;color:var(--gray-900,#111827);margin-bottom:2px">Mensuel</div>
+      <div style="font-size:10px;color:var(--gray-500,#6B7280);margin-bottom:8px">Mois en cours</div>
+      <button style="width:100%;padding:6px;background:#3B82F6;color:white;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">📥 Générer PDF</button>
     </div>
-    <div onclick="genererRapportPDF('trimestriel')" style="background:white;border:2px solid #8B5CF6;border-radius:14px;padding:18px;text-align:center;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(139,92,246,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
-      <div style="font-size:30px;margin-bottom:8px">🗓</div>
-      <div style="font-size:15px;font-weight:800;color:var(--gray-900,#111827);margin-bottom:4px">Trimestriel</div>
-      <div style="font-size:11.5px;color:var(--gray-500,#6B7280);margin-bottom:12px">Trimestre en cours</div>
-      <button style="width:100%;padding:8px;background:#8B5CF6;color:white;border:none;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">📥 Générer PDF</button>
+    <div onclick="genererRapportPDF('trimestriel')" style="background:white;border:1.5px solid #8B5CF6;border-radius:11px;padding:12px;text-align:center;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(139,92,246,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div style="font-size:20px;margin-bottom:5px">🗓</div>
+      <div style="font-size:12.5px;font-weight:800;color:var(--gray-900,#111827);margin-bottom:2px">Trimestriel</div>
+      <div style="font-size:10px;color:var(--gray-500,#6B7280);margin-bottom:8px">Trimestre en cours</div>
+      <button style="width:100%;padding:6px;background:#8B5CF6;color:white;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">📥 Générer PDF</button>
     </div>
-    <div onclick="genererRapportPDF('annuel')" style="background:white;border:2px solid #F59E0B;border-radius:14px;padding:18px;text-align:center;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(245,158,11,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
-      <div style="font-size:30px;margin-bottom:8px">📈</div>
-      <div style="font-size:15px;font-weight:800;color:var(--gray-900,#111827);margin-bottom:4px">Annuel</div>
-      <div style="font-size:11.5px;color:var(--gray-500,#6B7280);margin-bottom:12px">Année en cours</div>
-      <button style="width:100%;padding:8px;background:#F59E0B;color:white;border:none;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">📥 Générer PDF</button>
+    <div onclick="genererRapportPDF('annuel')" style="background:white;border:1.5px solid #F59E0B;border-radius:11px;padding:12px;text-align:center;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(245,158,11,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div style="font-size:20px;margin-bottom:5px">📈</div>
+      <div style="font-size:12.5px;font-weight:800;color:var(--gray-900,#111827);margin-bottom:2px">Annuel</div>
+      <div style="font-size:10px;color:var(--gray-500,#6B7280);margin-bottom:8px">Année en cours</div>
+      <button style="width:100%;padding:6px;background:#F59E0B;color:white;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">📥 Générer PDF</button>
     </div>
   </div>
 
