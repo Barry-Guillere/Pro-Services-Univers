@@ -323,15 +323,15 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
 
 /* ── MOBILE / RESPONSIVE (placé en dernier pour toujours l'emporter) ── */
 @media(max-width:900px){
-  /* Sidebar étroite (icônes seules) toujours visible, jamais en overlay plein écran */
-  .sidebar{width:92px}
-  .sb-logo{justify-content:center;padding:14px 0}
+  /* Sidebar étroite (icône + texte) toujours visible, jamais en overlay plein écran */
+  .sidebar{width:150px}
+  .sb-logo{justify-content:center;padding:14px 6px}
   .sb-logo-name,.sb-logo-ver,.sb-section,.sb-uname,.sb-urole{display:none}
-  .sb-nav{padding:10px 4px}
-  .nav-item{position:relative;justify-content:center;gap:0;padding:10px 0;font-size:0}
-  .nav-badge{position:absolute;top:4px;right:4px;margin-left:0}
+  .sb-nav{padding:10px 6px}
+  .nav-item{gap:7px;padding:8px 8px;font-size:11.5px;line-height:1.25}
+  .nav-item svg{width:14px;height:14px}
   .sb-user{flex-direction:column;gap:6px;padding:10px 4px}
-  .main{margin-left:92px !important}
+  .main{margin-left:150px !important}
   .page{padding:20px 10px 26px !important}
   .page-header{flex-direction:column !important;align-items:stretch !important;gap:10px !important}
   .kpi-grid.c4,.kpi-grid.c3{grid-template-columns:repeat(2,1fr) !important}
