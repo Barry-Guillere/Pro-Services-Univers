@@ -323,11 +323,16 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
 
 /* ── MOBILE / RESPONSIVE (placé en dernier pour toujours l'emporter) ── */
 @media(max-width:900px){
-  .mobile-menu-btn{display:flex}
-  .sidebar{transform:translateX(-100%);transition:transform .25s ease;box-shadow:4px 0 26px rgba(0,0,0,.5);z-index:1000}
-  body.sidebar-open .sidebar{transform:translateX(0)}
-  .main{margin-left:0 !important}
-  .page{padding:64px 14px 26px !important}
+  /* Sidebar étroite (icônes seules) toujours visible, jamais en overlay plein écran */
+  .sidebar{width:64px}
+  .sb-logo{justify-content:center;padding:14px 0}
+  .sb-logo-name,.sb-logo-ver,.sb-section,.sb-uname,.sb-urole{display:none}
+  .sb-nav{padding:10px 4px}
+  .nav-item{position:relative;justify-content:center;gap:0;padding:10px 0;font-size:0}
+  .nav-badge{position:absolute;top:4px;right:4px;margin-left:0}
+  .sb-user{flex-direction:column;gap:6px;padding:10px 4px}
+  .main{margin-left:64px !important}
+  .page{padding:20px 10px 26px !important}
   .page-header{flex-direction:column !important;align-items:stretch !important;gap:10px !important}
   .kpi-grid.c4,.kpi-grid.c3{grid-template-columns:repeat(2,1fr) !important}
   .g2,.g21,.g12,.g3{grid-template-columns:1fr !important}
