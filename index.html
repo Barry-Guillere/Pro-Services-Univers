@@ -2294,26 +2294,21 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
         <span id="cloud-status-badge"><span class="badge b-amber">Non configuré</span></span>
       </div>
       <div style="font-size:12px;color:var(--gray-600);margin-bottom:10px">
-        Connecte l'application à une base de données <strong>Supabase</strong> (gratuite) pour que les saisies de tous les comptes (PDG, Production, Finance, Stock, Logistique) soient partagées en temps réel, sur tous les appareils.
-      </div>
-      <div class="mf-row" style="margin-bottom:8px">
-        <div><label class="mf-label">URL du projet Supabase</label><input type="text" id="cloud-supabase-url" class="mf-input" placeholder="https://xxxxxxxx.supabase.co"></div>
-        <div><label class="mf-label">Clé publique (publishable/anon key)</label><input type="password" id="cloud-supabase-key" class="mf-input" placeholder="sb_publis... ou eyJhbGciOi..."></div>
+        Les saisies de tous les comptes (PDG, Production, Finance, Stock, Logistique) sont partagées en temps réel, sur tous les appareils, via votre session déjà connectée — aucune clé à saisir ici : elle est gérée côté serveur (Edge Function <code>cloud-sync</code>), jamais dans le navigateur.
       </div>
       <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button class="btn btn-p btn-sm" onclick="sauvegarderConfigCloud()">💾 Connecter</button>
-        <button class="btn btn-s btn-sm" onclick="testerConnexionCloud()">🔄 Tester la connexion</button>
         <button class="btn btn-s btn-sm" onclick="forcerSyncCloud()">⬆️ Forcer l'envoi</button>
         <button class="btn btn-s btn-sm" onclick="forcerPullCloud()">⬇️ Forcer la réception</button>
       </div>
       <div id="cloud-sync-msg" style="font-size:11.5px;color:var(--gray-500);min-height:16px"></div>
       <details style="margin-top:8px">
-        <summary style="font-size:11.5px;color:var(--blue);cursor:pointer;font-weight:600">Comment créer le projet Supabase (2 minutes) ?</summary>
+        <summary style="font-size:11.5px;color:var(--blue);cursor:pointer;font-weight:600">Mise en place côté serveur (une seule fois, par l'administrateur)</summary>
         <div style="font-size:11.5px;color:var(--gray-600);line-height:1.8;margin-top:8px;padding:10px;background:var(--gray-100);border-radius:8px">
-          1. Va sur <a href="https://supabase.com" target="_blank" style="color:var(--blue)">supabase.com</a> → crée un compte gratuit → "New project".<br>
-          2. Une fois le projet créé, va dans <strong>SQL Editor → New query</strong>, colle le contenu du fichier <strong>schema_supabase.sql</strong> (fourni séparément — une table par module : Finance, Stock, Commerce, Logistique, Points de vente, Sanitaire, Paramètres) puis clique "Run".<br>
-          3. Va dans <strong>Project Settings → API Keys</strong> : copie <strong>"Project URL"</strong> (dans Overview) et la <strong>"Publishable key"</strong> (anciennement "anon public").<br>
-          4. Colle-les ci-dessus et clique "Connecter". Fais pareil sur chaque poste/navigateur utilisé par l'équipe.
+          1. Dans le projet Supabase (le même que celui utilisé pour la connexion) : <strong>SQL Editor</strong>, colle le contenu de <strong>schema_supabase.sql</strong> (une table par module : Finance, Stock, Commerce, Logistique, Points de vente, Sanitaire, Paramètres) puis clique "Run".<br>
+          2. <strong>Edge Functions → New function</strong> → nom <code>cloud-sync</code> → colle le contenu de <strong>supabase/functions/cloud-sync/index.ts</strong> → Deploy.<br>
+          3. Sur cette fonction : <strong>Settings → "Verify JWT with legacy secret"</strong> = désactivé (la vérification se fait déjà dans le code, via la session de l'utilisateur).<br>
+          4. <strong>Important — sécurité :</strong> exécute aussi <strong>schema_cloud_sync_lockdown.sql</strong> dans le SQL Editor. Il verrouille ces tables (RLS) pour qu'elles ne soient plus accessibles qu'à cette Edge Function, même par quelqu'un qui aurait la clé publique du projet.<br>
+          5. Rien d'autre à configurer : chaque compte de l'équipe synchronise automatiquement dès qu'il est connecté.
         </div>
       </details>
     </div>
@@ -4210,8 +4205,8 @@ function renderAlerts(){
   setDelta('kd-alrt',crit+' critique(s) · '+(alerts.length-crit)+' avert.','down')
   list.innerHTML=alerts.map(function(a){
     return '<div class="'+a.cls+'" style="padding:10px 12px;border-radius:9px;margin-bottom:7px;background:'+(a.cls==='a-crit'?'rgba(239,68,68,.12)':'rgba(245,158,11,.12)')+';border-left:3px solid '+(a.cls==='a-crit'?'#EF4444':'#F59E0B')+'">'
-    +'<div style="font-size:13px;font-weight:700;color:'+(a.cls==='a-crit'?'#B91C1C':'#B45309')+'">'+a.title+'</div>'
-    +(a.sub?'<div style="font-size:11.5px;color:var(--gray-500);margin-top:3px">'+a.sub+'</div>':'')
+    +'<div style="font-size:13px;font-weight:700;color:'+(a.cls==='a-crit'?'#B91C1C':'#B45309')+'">'+esc(a.title)+'</div>'
+    +(a.sub?'<div style="font-size:11.5px;color:var(--gray-500);margin-top:3px">'+esc(a.sub)+'</div>':'')
     +'</div>'
   }).join('')
 }
@@ -4539,18 +4534,12 @@ document.addEventListener('DOMContentLoaded', function(){
 var CLOUD_ROW_ID    = 'psu_main'
 var _cloudPolling    = null
 
-function getCloudConfig(){
-  try{
-    return {
-      url: (localStorage.getItem('avi_cloud_url') || '').trim().replace(/\/+$/,''),
-      key: (localStorage.getItem('avi_cloud_key') || '').trim()
-    }
-  }catch(e){ return {url:'',key:''} }
-}
-
+// ── Synchronisation cloud : passe par l'Edge Function `cloud-sync`, qui
+//    garde la clé de service Supabase côté serveur (jamais dans le
+//    navigateur/localStorage). L'authentification, c'est la session déjà
+//    ouverte via Supabase Auth — aucune clé à saisir dans l'app. ──
 function cloudConfigured(){
-  var c = getCloudConfig()
-  return !!(c.url && c.key)
+  return !!(SUPABASE_READY && sbClient && currentUser)
 }
 
 function setCloudStatus(state, msg){
@@ -4568,57 +4557,30 @@ function setCloudStatus(state, msg){
   if(m && msg) m.textContent = msg
 }
 
-// ── Sauvegarder l'URL/clé Supabase saisies dans Administration ──
-function sauvegarderConfigCloud(){
-  var url = (document.getElementById('cloud-supabase-url')||{}).value || ''
-  var key = (document.getElementById('cloud-supabase-key')||{}).value || ''
-  url = url.trim().replace(/\/+$/,'')
-  key = key.trim()
-  if(!url || !key){ setCloudStatus('off',"⚠️ Renseigne l'URL et la clé avant de connecter."); return }
-  try{
-    localStorage.setItem('avi_cloud_url', url)
-    localStorage.setItem('avi_cloud_key', key)
-  }catch(e){}
-  setCloudStatus('syncing', 'Connexion en cours…')
-  testerConnexionCloud(function(ok){
-    if(ok){
-      setCloudStatus('ok', '✅ Connecté — synchronisation active.')
-      demarrerSyncCloud()
-      try{ autosave() }catch(e){} // pousse immédiatement les données locales existantes
-    }
+// ── Jeton de la session en cours, à joindre à chaque appel de l'Edge Function ──
+function _cloudToken(){
+  if(!sbClient) return Promise.resolve(null)
+  return sbClient.auth.getSession().then(function(res){
+    return (res && res.data && res.data.session && res.data.session.access_token) || null
   })
 }
 
-// ── Vérifier que l'URL/clé fonctionnent et que la table existe ──
-function testerConnexionCloud(cb){
-  var c = getCloudConfig()
-  if(!c.url || !c.key){ setCloudStatus('off',"⚠️ Configure d'abord l'URL et la clé."); if(cb) cb(false); return }
-  fetch(c.url+'/rest/v1/parametres?id=eq.principal&select=id', {
-    headers: { 'apikey': c.key, 'Authorization': 'Bearer '+c.key }
-  }).then(function(r){
-    if(!r.ok) throw new Error('HTTP '+r.status)
-    return r.json()
-  }).then(function(){
-    setCloudStatus('ok', '✅ Connexion réussie.')
-    if(cb) cb(true)
-  }).catch(function(err){
-    setCloudStatus('error', "❌ Échec : "+err.message+" (vérifie l'URL, la clé, et que les tables ont bien été créées).")
-    if(cb) cb(false)
+function _cloudCall(token, payload){
+  return fetch(SUPABASE_URL + '/functions/v1/cloud-sync', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token,
+      'apikey': SUPABASE_ANON_KEY
+    },
+    body: JSON.stringify(payload)
   })
 }
 
 // ── Envoi (push) — une requête par table, avec upsert sur id ──
-function _cloudUpsert(c, table, rows, onConflict){
+function _cloudUpsert(token, table, rows, onConflict){
   if(!rows || !rows.length) return Promise.resolve()
-  return fetch(c.url+'/rest/v1/'+table+'?on_conflict='+(onConflict||'id'), {
-    method: 'POST',
-    headers: {
-      'apikey': c.key, 'Authorization': 'Bearer '+c.key,
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates,return=minimal'
-    },
-    body: JSON.stringify(rows)
-  }).then(function(r){
+  return _cloudCall(token, { action:'upsert', table: table, rows: rows, onConflict: onConflict||'id' }).then(function(r){
     if(!r.ok){
       return r.text().then(function(txt){
         throw new Error(table+' : HTTP '+r.status+' — '+txt)
@@ -4630,7 +4592,8 @@ function _cloudUpsert(c, table, rows, onConflict){
 // ── Envoi (push) — appelé automatiquement à chaque autosave() ──
 function syncToSupabase(data){
   if(!cloudConfigured()) return
-  var c = getCloudConfig()
+  _cloudToken().then(function(token){
+  if(!token) return
 
   var financeOps = (data.FIN_operations||[]).map(function(o){
     return {id:o.id, date:o.date||'', type:o.type||'', categorie:o.cat||'', description:o.desc||'', compte:o.compte||'', montant:o.montant||0, responsable:o.resp||''}
@@ -4667,31 +4630,31 @@ function syncToSupabase(data){
   })
 
   Promise.all([
-    _cloudUpsert(c,'finance_operations',financeOps),
-    _cloudUpsert(c,'finance_soldes',financeSoldes,'compte'),
-    _cloudUpsert(c,'stock_quantites',stockQte,'produit_id'),
-    _cloudUpsert(c,'stock_mouvements',stockMvts),
-    _cloudUpsert(c,'commerce_clients',clients),
-    _cloudUpsert(c,'commerce_factures',factures),
-    _cloudUpsert(c,'points_de_vente',pdv),
-    _cloudUpsert(c,'logistique_voyages',voyages),
-    _cloudUpsert(c,'logistique_recus',recus),
-    _cloudUpsert(c,'logistique_pannes',pannes),
-    _cloudUpsert(c,'sante_evenements',santeEvts),
-    _cloudUpsert(c,'logistique_config',[{id:'principal',km_actuel:data.LOG_kmActuel||0,voyages_total:data.LOG_voyTotal||0,voyages_depuis_vidange:data.LOG_voyDepuis||0,seuil_vidange:data.LOG_seuil||50,date_derniere_vidange:data.LOG_dateVidange}],'id'),
-    _cloudUpsert(c,'parametres',[{id:'principal',data:JSON.parse(localStorage.getItem('avi_params_v2')||'{}')}],'id')
+    _cloudUpsert(token,'finance_operations',financeOps),
+    _cloudUpsert(token,'finance_soldes',financeSoldes,'compte'),
+    _cloudUpsert(token,'stock_quantites',stockQte,'produit_id'),
+    _cloudUpsert(token,'stock_mouvements',stockMvts),
+    _cloudUpsert(token,'commerce_clients',clients),
+    _cloudUpsert(token,'commerce_factures',factures),
+    _cloudUpsert(token,'points_de_vente',pdv),
+    _cloudUpsert(token,'logistique_voyages',voyages),
+    _cloudUpsert(token,'logistique_recus',recus),
+    _cloudUpsert(token,'logistique_pannes',pannes),
+    _cloudUpsert(token,'sante_evenements',santeEvts),
+    _cloudUpsert(token,'logistique_config',[{id:'principal',km_actuel:data.LOG_kmActuel||0,voyages_total:data.LOG_voyTotal||0,voyages_depuis_vidange:data.LOG_voyDepuis||0,seuil_vidange:data.LOG_seuil||50,date_derniere_vidange:data.LOG_dateVidange}],'id'),
+    _cloudUpsert(token,'parametres',[{id:'principal',data:JSON.parse(localStorage.getItem('avi_params_v2')||'{}')}],'id')
   ]).then(function(){
     setCloudStatus('ok', '☁️ Synchronisé à '+new Date().toLocaleTimeString('fr-FR'))
   }).catch(function(err){
     setCloudStatus('error', '⚠️ Envoi partiel : '+err.message)
   })
+  })
 }
 
 // ── Réception (pull) — une requête par table ──
-function _cloudFetch(c, table, select){
-  return fetch(c.url+'/rest/v1/'+table+'?select='+(select||'*'), {
-    headers: { 'apikey': c.key, 'Authorization': 'Bearer '+c.key }
-  }).then(function(r){ if(!r.ok) throw new Error(table+' : HTTP '+r.status); return r.json() })
+function _cloudFetch(token, table, select){
+  return _cloudCall(token, { action:'select', table: table, select: select||'*' })
+    .then(function(r){ if(!r.ok) throw new Error(table+' : HTTP '+r.status); return r.json() })
 }
 
 // ── Fusionne les données reçues du serveur avec les données locales,
@@ -4721,16 +4684,17 @@ function _fusionnerParId(local, remote){
 
 function pullFromSupabase(applyIfNewer, cb){
   if(!cloudConfigured()){ if(cb) cb(false); return }
-  var c = getCloudConfig()
+  _cloudToken().then(function(token){
+  if(!token){ if(cb) cb(false); return }
 
   Promise.all([
-    _cloudFetch(c,'finance_operations'), _cloudFetch(c,'finance_soldes'),
-    _cloudFetch(c,'stock_quantites'), _cloudFetch(c,'stock_mouvements'),
-    _cloudFetch(c,'commerce_clients'), _cloudFetch(c,'commerce_factures'),
-    _cloudFetch(c,'points_de_vente'), _cloudFetch(c,'logistique_voyages'),
-    _cloudFetch(c,'logistique_recus'), _cloudFetch(c,'logistique_pannes'),
-    _cloudFetch(c,'sante_evenements'), _cloudFetch(c,'logistique_config'),
-    _cloudFetch(c,'parametres')
+    _cloudFetch(token,'finance_operations'), _cloudFetch(token,'finance_soldes'),
+    _cloudFetch(token,'stock_quantites'), _cloudFetch(token,'stock_mouvements'),
+    _cloudFetch(token,'commerce_clients'), _cloudFetch(token,'commerce_factures'),
+    _cloudFetch(token,'points_de_vente'), _cloudFetch(token,'logistique_voyages'),
+    _cloudFetch(token,'logistique_recus'), _cloudFetch(token,'logistique_pannes'),
+    _cloudFetch(token,'sante_evenements'), _cloudFetch(token,'logistique_config'),
+    _cloudFetch(token,'parametres')
   ]).then(function(results){
     var [finOps, finSoldes, stkQte, stkMvts, clients, factures, pdv, voyages, recus, pannes, sante, logCfg, params] = results
 
@@ -4789,6 +4753,7 @@ function pullFromSupabase(applyIfNewer, cb){
     setCloudStatus('error', '⚠️ Réception impossible : '+err.message)
     if(cb) cb(false)
   })
+  })
 }
 
 function forcerSyncCloud(){
@@ -4827,12 +4792,7 @@ function demarrerSyncCloud(){
 
 // Préremplit les champs de config quand on ouvre la page Administration
 function preremplirConfigCloud(){
-  var c = getCloudConfig()
-  var u = document.getElementById('cloud-supabase-url')
-  var k = document.getElementById('cloud-supabase-key')
-  if(u && c.url) u.value = c.url
-  if(k && c.key) k.value = c.key
-  if(cloudConfigured()) setCloudStatus('ok', 'Configuré — synchronisation active.')
+  if(cloudConfigured()) setCloudStatus('ok', 'Connecté — synchronisation active.')
   else setCloudStatus('off','')
 }
 
@@ -5677,7 +5637,7 @@ function filtrerFicheMaladies(){
     return !q || m.nom.toLowerCase().indexOf(q)>=0 || m.signes.toLowerCase().indexOf(q)>=0
   })
   if(liste.length===0){
-    wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-400);font-size:13px">Aucune maladie trouvée pour "'+q+'"</div>'
+    wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-400);font-size:13px">Aucune maladie trouvée pour "'+esc(q)+'"</div>'
     return
   }
   wrap.innerHTML = liste.map(function(m){

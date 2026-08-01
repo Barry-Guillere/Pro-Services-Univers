@@ -49,6 +49,43 @@ les commentaires en tête du fichier).
 Si l'Edge Function n'est pas déployée ou indisponible, l'app retombe
 automatiquement sur l'analyse locale (pas de blocage pour l'utilisateur).
 
+## Edge Function `cloud-sync` (proxy synchronisation des données métier)
+
+Remplace l'ancien mécanisme où un administrateur collait l'URL et la clé
+Supabase du projet de synchronisation directement dans l'app (Administration),
+stockées en clair dans `localStorage` du navigateur — une clé exposée de cette
+façon peut être volée par n'importe quelle faille XSS ailleurs dans l'app.
+
+Désormais l'app appelle `functions/v1/cloud-sync` avec le jeton de la session
+Supabase Auth déjà ouverte (aucune clé à saisir). La fonction vérifie ce jeton
+(comme `claude-chat`), puis effectue la lecture/écriture avec la clé
+`service_role`, injectée automatiquement par Supabase dans chaque Edge
+Function (`SUPABASE_SERVICE_ROLE_KEY`) — jamais transmise au navigateur.
+
+Déploiement (dashboard, comme `claude-chat`) :
+1. **SQL Editor** : exécuter `schema_supabase.sql` (tables Finance, Stock,
+   Commerce, Logistique, Points de vente, Sanitaire, Paramètres — un fichier
+   séparé, non fourni ici).
+2. **Edge Functions → New function** → nom `cloud-sync` → coller
+   `functions/cloud-sync/index.ts` → Deploy.
+3. Sur cette fonction : **Settings → "Verify JWT with legacy secret"** =
+   désactivé (même raison que pour `claude-chat` : vérification manuelle du
+   jeton dans le code).
+4. **Important — sécurité** : exécuter aussi `schema_cloud_sync_lockdown.sql`
+   dans le SQL Editor. Il active RLS sans policy sur ces tables, donc plus
+   aucun accès direct via la clé publique (`anon`) — seule l'Edge Function
+   (via `service_role`, qui ignore RLS) peut encore les lire/écrire. Sans
+   cette étape, la clé publique du projet (déjà visible dans `index.html`
+   pour l'authentification) suffirait à lire/écrire ces tables directement,
+   sans même passer par l'app.
+5. Rien à configurer côté navigateur : chaque compte synchronise
+   automatiquement dès qu'il est connecté (bouton "Forcer l'envoi/réception"
+   dans Administration pour un déclenchement manuel).
+
+La fonction ne touche que les tables listées dans `TABLES_AUTORISEES`
+(`functions/cloud-sync/index.ts`) — jamais `profiles` ni une table arbitraire
+passée par le client.
+
 ## Notes
 
 - Les anciens comptes (`barrysadio0@gmail.com`, `hhaba@avimanager.sn`,
