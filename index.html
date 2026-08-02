@@ -6377,7 +6377,24 @@ function sauvegarderParametres(){
     },
     couleur: val('p-couleur') || '#1D9E75',
     batiments: (function(){
-      try{ var old = JSON.parse(localStorage.getItem('avi_params_v2')||'{}'); return old.batiments||{a:{},b:{},c:{}} }catch(e){ return {a:{},b:{},c:{}} }
+      var old = {}
+      try{ var raw = JSON.parse(localStorage.getItem('avi_params_v2')||'{}'); old = raw.batiments||{} }catch(e){}
+      function bat(prefix, prev){
+        prev = prev || {}
+        var lot = val(prefix+'-lot'), race = val(prefix+'-race')
+        var eff = val(prefix+'-eff'), obj = val(prefix+'-obj')
+        return {
+          lot:      lot  !== '' ? lot            : (prev.lot||''),
+          race:     race !== '' ? race           : (prev.race||''),
+          effectif: eff  !== '' ? parseInt(eff)  : (prev.effectif||0),
+          objectif: obj  !== '' ? parseInt(obj)  : (prev.objectif||82)
+        }
+      }
+      return {
+        a: bat('bat-a', old.a),
+        b: bat('bat-b', old.b),
+        c: bat('bat-c', old.c)
+      }
     })()
   }
 
@@ -6399,6 +6416,20 @@ function sauvegarderParametres(){
     toast.style.display = 'flex'
     setTimeout(function(){ toast.style.display = 'none' }, 3000)
   }
+
+  // ── Répercuter immédiatement la config bâtiments (sans recharger la page) ──
+  try{
+    if(typeof BAT_INFO !== 'undefined'){
+      ['a','b','c'].forEach(function(k){
+        var b = params.batiments[k]
+        if(!b) return
+        BAT_INFO[k].effectif = b.effectif||0
+        BAT_INFO[k].objectif = b.objectif||82
+      })
+    }
+    if(typeof initDashboard==='function') initDashboard()
+    if(typeof rafraichirProduction==='function') rafraichirProduction()
+  }catch(e){}
 
   try{ if(typeof chargerAdminFerme==='function') chargerAdminFerme() }catch(e){}
   try{ autosave() }catch(e){}
@@ -6428,6 +6459,15 @@ function chargerParametres(){
   setVal('p-seuil-stock', s.stock)
   setVal('p-seuil-mort',  s.mortalite)
   setVal('p-rappel-vac',  s.rappelVaccin)
+
+  var bats = params.batiments || {}
+  ;['a','b','c'].forEach(function(k){
+    var b = bats[k] || {}
+    setVal('bat-'+k+'-lot',  b.lot)
+    setVal('bat-'+k+'-race', b.race)
+    setVal('bat-'+k+'-eff',  b.effectif)
+    setVal('bat-'+k+'-obj',  b.objectif)
+  })
 
   if(params.couleur){
     setVal('p-couleur', params.couleur)
