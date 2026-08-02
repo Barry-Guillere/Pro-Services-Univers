@@ -530,7 +530,6 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-d btn-sm" onclick="ouvrirSaisiePonte()">🥚 Saisie détaillée de ponte</button>
-      <button class="btn btn-p btn-sm" onclick="ouvrirModalProductionJour()">🥚 Enregistrer la production journalière</button>
       <button class="btn btn-s btn-sm" onclick="exporterProductionCSV()">📥 CSV</button>
       <button class="btn btn-s btn-sm" onclick="exporterProductionPDF()">📄 PDF</button>
     </div>
@@ -546,38 +545,6 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
   </div>
 </div>
 
-<!-- ══ MODAL PRODUCTION JOURNALIÈRE (production + consommation) ══ -->
-<div class="modal-overlay" id="modal-production-jour" onclick="if(event.target===this)this.classList.remove('open')">
-  <div class="modal-box" style="max-width:480px">
-    <div class="modal-head">
-      <h2>🥚 Production journalière</h2>
-      <button class="modal-close" onclick="document.getElementById('modal-production-jour').classList.remove('open')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="mf-row">
-        <div><label class="mf-label">Date *</label><input type="date" id="pj-date" class="mf-input"></div>
-        <div><label class="mf-label">Bâtiment *</label>
-          <select id="pj-bat" class="mf-input" style="appearance:auto">
-            <option value="A">Bâtiment A</option>
-            <option value="B">Bâtiment B</option>
-            <option value="C">Bâtiment C</option>
-          </select>
-        </div>
-      </div>
-      <div class="mf-row c1">
-        <div><label class="mf-label">🥚 Alvéoles produites</label><input type="number" id="pj-alveoles" class="mf-input" placeholder="ex: 250" min="0"></div>
-      </div>
-      <div class="mf-row c1">
-        <div><label class="mf-label">🌾 Aliment consommé (kg)</label><input type="number" id="pj-aliment-kg" class="mf-input" placeholder="ex: 450" min="0"></div>
-      </div>
-      <div id="pj-success" class="success-msg" style="margin-top:8px">✅ Production et consommation enregistrées !</div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-d" onclick="document.getElementById('modal-production-jour').classList.remove('open')">Annuler</button>
-      <button class="btn btn-p" onclick="enregistrerProductionJournaliere()">✅ Enregistrer</button>
-    </div>
-  </div>
-</div>
 
 
    <!-- ═══ COMMERCE ═══ -->
@@ -7539,80 +7506,6 @@ function validerSection(section){
 }
 
 function ouvrirModalMouvement(){ ouvrirModalEntreeStock() }
-
-// ── Raccourcis depuis la page Production ──────────────────
-function ouvrirModalProductionJour(){
-  var d = new Date().toISOString().split('T')[0]
-  document.getElementById('pj-date').value = d
-  document.getElementById('pj-alveoles').value = ''
-  document.getElementById('pj-aliment-kg').value = ''
-  document.getElementById('modal-production-jour').classList.add('open')
-}
-
-function enregistrerProductionJournaliere(){
-  var date = document.getElementById('pj-date').value
-  var bat  = document.getElementById('pj-bat').value
-  var alveoles = parseFloat(document.getElementById('pj-alveoles').value) || 0
-  var alimentKg = parseFloat(document.getElementById('pj-aliment-kg').value) || 0
-
-  if(!date){ alert('Merci de renseigner la date.'); return }
-  if(alveoles<=0 && alimentKg<=0){ alert('Renseigne au moins la production ou la consommation.'); return }
-
-  var prodIds = { A:'oeuf_bloc_a', B:'oeuf_bloc_b', C:'oeuf_bloc_c' }
-  var resp = currentUser ? (currentUser.name||'') : 'Admin'
-
-  if(alveoles>0){
-    var prodId = prodIds[bat]
-    var prod = STOCK_CATALOGUE.find(function(p){ return p.id===prodId })
-    var curr1 = STOCK_QTE[prodId] || {qte:0,prix_moyen:0}
-    curr1.qte = (curr1.qte||0) + alveoles
-    STOCK_QTE[prodId] = curr1
-    STOCK_MOUVEMENTS.unshift({
-      id: Date.now(),
-      date: date,
-      prodId: prodId,
-      prodNom: prod ? prod.nom : prodId,
-      type: 'entree',
-      qte: alveoles,
-      unite: prod ? prod.unite : 'alvéole',
-      prix: 0,
-      total: 0,
-      fournisseur: 'Bâtiment '+bat,
-      bon: '',
-      resp: resp
-    })
-  }
-
-  if(alimentKg>0){
-    var sacs = alimentKg / 50   // 1 sac = 50 kg
-    var alimId = 'alim_ponte'
-    var alim = STOCK_CATALOGUE.find(function(p){ return p.id===alimId })
-    var curr2 = STOCK_QTE[alimId] || {qte:0,prix_moyen:0}
-    curr2.qte = Math.max(0,(curr2.qte||0) - sacs)
-    STOCK_QTE[alimId] = curr2
-    STOCK_MOUVEMENTS.unshift({
-      id: Date.now()+1,
-      date: date,
-      prodId: alimId,
-      prodNom: alim ? alim.nom : alimId,
-      type: 'sortie',
-      qte: sacs,
-      unite: 'sac',
-      prix: curr2.prix_moyen||0,
-      total: 0,
-      motif: 'production',
-      bloc: bat,
-      resp: resp
-    })
-  }
-
-  var msg = document.getElementById('pj-success')
-  if(msg){ msg.style.display='block'; setTimeout(function(){ msg.style.display='none' },2000) }
-  setTimeout(function(){ document.getElementById('modal-production-jour').classList.remove('open') }, 700)
-  setTimeout(autosave, 100)
-  try{ rafraichirProduction() }catch(e){}
-  try{ rafraichirStock() }catch(e){}
-}
 
 // ── Enregistrer une entrée ────────────────────────────────
 function enregistrerEntreeStock(){
