@@ -4019,7 +4019,7 @@ function refreshDashboard(){
     flashCard('kc-ca','flash-green')
 
     // ── KPI TRÉSORERIE ─────────────────────────
-    setKpi('kv-tres', S.tres>0 ? fmt(S.tres)+' GNF' : '—')
+    setKpi('kv-tres', fmt(S.tres)+' GNF', S.tres<0?'#F87171':'var(--gray-900)')
     setDelta('kd-tres', 'Mis à jour à '+hms(), 'neutral')
     flashCard('kc-tres','flash-green')
 
@@ -4204,8 +4204,8 @@ function initDashboard(){
   // Afficher les KPIs
   var globalRate = (rA+rB+rC) > 0 ? ((rA+rB+rC)/3).toFixed(1)+'%' : '—'
   setKpi('kv-rate', globalRate, (parseFloat(globalRate)||0)>=82?'#059669':'#F87171')
-  setKpi('kv-ca',   S.ca>0 ? fmt(S.ca)+' GNF' : '—')
-  setKpi('kv-tres', S.tres>0 ? fmt(S.tres)+' GNF' : '—')
+  setKpi('kv-ca',   S.ca>0 ? fmt(S.ca)+' GNF' : '0 GNF')
+  setKpi('kv-tres', fmt(S.tres)+' GNF', S.tres<0?'#F87171':'var(--gray-900)')
 
   var totalOeufs = PONTES_SESSION.a&&PONTES_SESSION.b&&PONTES_SESSION.c ?
     (PONTES_SESSION.a.total*30)+(PONTES_SESSION.b.total*30)+(PONTES_SESSION.c.total*30) : 0
@@ -4228,9 +4228,7 @@ function initDashboard(){
   if(S.rateC>0 && S.rateC < 75) alertes++
   setKpi('kv-alrt', alertes>0?String(alertes):'0', alertes>0?'#F87171':'#059669')
 
-  // Trésorerie depuis Finance
-  if(typeof FIN !== 'undefined' && S.tres>0){
-    setKpi('kv-tres', fmt(S.tres)+' GNF')
+  if(typeof FIN !== 'undefined'){
     setDelta('kd-tres', (Object.keys(FIN.soldes).length)+' comptes actifs','neutral')
   }
 
