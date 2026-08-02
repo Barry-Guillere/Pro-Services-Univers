@@ -2210,15 +2210,6 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
         </div>
       </div>
 
-      <!-- Bâtiments -->
-      <div class="card">
-        <div class="sec-title">🐔 Bâtiments configurés</div>
-        <div id="adm-batiments-info">
-          <div style="text-align:center;padding:16px;color:var(--gray-400);font-size:12.5px">
-            Configurez les bâtiments dans les Paramètres
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -3523,7 +3514,6 @@ function chargerAdmin(){
   try{ chargerAdminEquipe() }catch(e){}
   try{ chargerEquipeDepuisSupabase() }catch(e){}
   try{ chargerAdminFerme() }catch(e){}
-  try{ chargerAdminBatiments() }catch(e){}
   try{ chargerAdminJournal() }catch(e){}
   try{ chargerAdminStats() }catch(e){}
   try{ preremplirConfigCloud() }catch(e){}
@@ -3563,24 +3553,6 @@ function chargerAdminFerme(){
   setEl('adm-ferme-tel',     prms.telephone     || '621 989 823')
   setEl('adm-ferme-email',   prms.email         || 'barrysadio0@gmail.com')
   setEl('adm-ferme-ninea',   prms.ninea         || 'NIF 444325021')
-}
-
-// ── Bâtiments configurés (depuis BAT_INFO) ─────────────────────
-function chargerAdminBatiments(){
-  var wrap = document.getElementById('adm-batiments-info')
-  if(!wrap) return
-  var keys = Object.keys(BAT_INFO)
-  if(keys.length===0){
-    wrap.innerHTML = '<div style="text-align:center;padding:16px;color:var(--gray-400);font-size:12.5px">Configurez les bâtiments dans les Paramètres</div>'
-    return
-  }
-  wrap.innerHTML = keys.map(function(k){
-    var b = BAT_INFO[k]
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gray-100)">'
-      +'<span style="font-size:12.5px;font-weight:600">'+b.label+'</span>'
-      +'<span style="font-size:12.5px;color:var(--gray-500)">'+(b.effectif||0).toLocaleString('fr-FR')+' sujets · objectif '+(b.objectif||82)+'%</span>'
-      +'</div>'
-  }).join('')
 }
 
 // ── Journal des accès récents ───────────────────────────────────
