@@ -3999,12 +3999,21 @@ function renderBuildings(){
 // ══════════════════════════════════════════
 //  ALERTES
 // ══════════════════════════════════════════
-function calculerRappelsVaccins(){
-  var seuilAlerte = 7
+function getSeuilsAlerte(){
+  var seuils = { ponte:5, stock:20, mortalite:10, rappelVaccin:7 }
   try{
     var prms = JSON.parse(localStorage.getItem('avi_params_v2')||'null')
-    if(prms && prms.seuils && prms.seuils.rappelVaccin) seuilAlerte = prms.seuils.rappelVaccin
+    if(prms && prms.seuils){
+      if(prms.seuils.ponte) seuils.ponte = prms.seuils.ponte
+      if(prms.seuils.stock) seuils.stock = prms.seuils.stock
+      if(prms.seuils.mortalite) seuils.mortalite = prms.seuils.mortalite
+      if(prms.seuils.rappelVaccin) seuils.rappelVaccin = prms.seuils.rappelVaccin
+    }
   }catch(e){}
+  return seuils
+}
+function calculerRappelsVaccins(){
+  var seuilAlerte = getSeuilsAlerte().rappelVaccin
   var today = new Date(); today.setHours(0,0,0,0)
   var out = []
   if(typeof VACCINATIONS === 'undefined') return out
@@ -4024,10 +4033,11 @@ function renderAlerts(){
   const list=document.getElementById('alerts-list')
   if(!list) return
   const alerts=[]
+  const seuilsAlerte = getSeuilsAlerte()
   // Alertes ponte
-  if(S.rateA>0&&S.rateA<(BAT_INFO.a.objectif||82)-5) alerts.push({cls:'a-crit',title:'Bâtiment A — Chute de ponte',sub:'Taux: '+S.rateA.toFixed(1)+'%'})
-  if(S.rateB>0&&S.rateB<(BAT_INFO.b.objectif||82)-5) alerts.push({cls:'a-crit',title:'Bâtiment B — Chute de ponte',sub:'Taux: '+S.rateB.toFixed(1)+'%'})
-  if(S.rateC>0&&S.rateC<(BAT_INFO.c.objectif||82)-5) alerts.push({cls:'a-crit',title:'Bâtiment C — Chute de ponte',sub:'Taux: '+S.rateC.toFixed(1)+'%'})
+  if(S.rateA>0&&S.rateA<(BAT_INFO.a.objectif||82)-seuilsAlerte.ponte) alerts.push({cls:'a-crit',title:'Bâtiment A — Chute de ponte',sub:'Taux: '+S.rateA.toFixed(1)+'%'})
+  if(S.rateB>0&&S.rateB<(BAT_INFO.b.objectif||82)-seuilsAlerte.ponte) alerts.push({cls:'a-crit',title:'Bâtiment B — Chute de ponte',sub:'Taux: '+S.rateB.toFixed(1)+'%'})
+  if(S.rateC>0&&S.rateC<(BAT_INFO.c.objectif||82)-seuilsAlerte.ponte) alerts.push({cls:'a-crit',title:'Bâtiment C — Chute de ponte',sub:'Taux: '+S.rateC.toFixed(1)+'%'})
   // Sanitaire
   if(typeof SANTE_EVENTS!=='undefined') SANTE_EVENTS.filter(function(e){return e.statut!=='resolu'}).slice(0,2).forEach(function(e){ alerts.push({cls:'a-crit',title:'Alerte sanitaire — Bat.'+e.bat,sub:e.diagnostic||''}) })
   // Rappels de vaccination
@@ -4041,6 +4051,17 @@ function renderAlerts(){
     STOCK_CATALOGUE.forEach(function(p){
       var q = (STOCK_QTE[p.id]||{qte:0}).qte
       if(q < p.seuil) alerts.push({cls:'a-warn',title:'Stock bas — '+p.nom,sub:q+' '+p.unite+' (seuil: '+p.seuil+')'})
+    })
+    // Stock aliment total (Paramètres → Stock aliment minimum)
+    var totalAliment = STOCK_CATALOGUE.filter(function(p){ return p.cat==='aliment' }).reduce(function(s,p){ return s+((STOCK_QTE[p.id]||{qte:0}).qte) },0)
+    if(totalAliment < seuilsAlerte.stock) alerts.push({cls:'a-warn',title:'Stock aliment minimum atteint',sub:totalAliment+' sacs au total (seuil: '+seuilsAlerte.stock+')'})
+  }
+  // Mortalité journalière par bâtiment
+  if(typeof MORTALITES_LOG!=='undefined'){
+    var todayStrMort = new Date().toISOString().split('T')[0]
+    ;['A','B','C'].forEach(function(b){
+      var mortsAujourdhui = MORTALITES_LOG.filter(function(m){ return m.bat===b && m.date===todayStrMort }).reduce(function(s,m){ return s+(m.nb||0) },0)
+      if(mortsAujourdhui > seuilsAlerte.mortalite) alerts.push({cls:'a-crit',title:'Bâtiment '+b+' — Mortalité élevée',sub:mortsAujourdhui+' sujets aujourd\'hui (seuil: '+seuilsAlerte.mortalite+')'})
     })
   }
   // Vidange
