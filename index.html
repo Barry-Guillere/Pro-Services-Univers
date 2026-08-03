@@ -1429,6 +1429,38 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
   </div>
 </div>
 
+<!-- ══ MODAL ENREGISTRER UNE VENTE PDV ══ -->
+<div class="modal-overlay" id="modal-vente-pdv" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-head">
+      <h2 id="vpdv-titre">💰 Enregistrer une vente</h2>
+      <button class="modal-close" onclick="document.getElementById('modal-vente-pdv').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="vpdv-pdv-id">
+      <div class="form-field"><label>Date de la vente *</label><input type="date" id="vpdv-date"></div>
+      <div class="form-field"><label>Produit vendu *</label>
+        <select id="vpdv-produit" onchange="majPrixVentePDV(this)">
+          <option value="">Sélectionner un produit...</option>
+        </select>
+      </div>
+      <div class="form-grid">
+        <div class="form-field" style="margin:0"><label>Quantité *</label><input type="number" id="vpdv-qte" min="1" value="1" oninput="calcTotalVentePDV()"></div>
+        <div class="form-field" style="margin:0"><label>Prix unitaire (GNF) *</label><input type="number" id="vpdv-pu" min="0" oninput="calcTotalVentePDV()"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--gray-50);border-radius:9px;margin-top:10px">
+        <span style="font-size:13px;font-weight:700">Total</span>
+        <span id="vpdv-total" style="font-size:16px;font-weight:800;color:var(--brand)">0 GNF</span>
+      </div>
+      <div class="success-msg" id="vente-pdv-success" style="margin-top:10px">✅ Vente enregistrée avec succès !</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-d" onclick="document.getElementById('modal-vente-pdv').classList.remove('open')">Annuler</button>
+      <button class="btn btn-p" onclick="enregistrerVentePDV()">✅ Enregistrer la vente</button>
+    </div>
+  </div>
+</div>
+
    <div class="page" id="page-logistique">
   <div class="page-header">
     <div>
@@ -7207,6 +7239,14 @@ function rafraichirStock(){
 //  MODULE POINTS DE VENTE
 // ════════════════════════════════════════════════════════════
 var POINTS_DE_VENTE = []
+var PDV_CATALOGUE = [
+  { id:'b30',   nom:'Barquette 30 œufs',    pu:1800 },
+  { id:'alv',   nom:'Alvéole œufs',         pu:1800 },
+  { id:'poul',  nom:'Poulet réforme',       pu:4500 },
+  { id:'ad50',  nom:'Aliment Démarrage 50kg', pu:16000 },
+  { id:'ap50',  nom:'Aliment Ponte 50kg',   pu:18000 },
+  { id:'fient', nom:'Fiente séchée',        pu:1500 }
+]
 
 function ouvrirModalCreerPDV(idEdit){
   var el = function(id){ return document.getElementById(id) }
@@ -7349,7 +7389,7 @@ function rafraichirPDV(){
       grille.innerHTML = POINTS_DE_VENTE.map(function(p){
         var isActif = p.statut==='actif'
         var prods = esc((p.produits||[]).map(function(id){
-          var pp=POS_CATALOGUE.find(function(x){return x.id===id}); return pp?pp.nom.split(' ').slice(0,2).join(' '):id
+          var pp=PDV_CATALOGUE.find(function(x){return x.id===id}); return pp?pp.nom.split(' ').slice(0,2).join(' '):id
         }).slice(0,4).join(' · '))
         return '<div style="background:white;border:1.5px solid var(--gray-200);border-radius:14px;overflow:hidden">'
           // En-tête coloré
@@ -7379,7 +7419,8 @@ function rafraichirPDV(){
           +'</div>'
           // Actions
           +'<div style="display:flex;gap:6px">'
-          +'<button class="btn btn-d btn-sm" style="flex:1" onclick="ouvrirModalCreerPDV(this.dataset.id)" data-id="'+p.id+'">&#x270F;&#xFE0F; Modifier</button>'
+          +'<button class="btn btn-p btn-sm" style="flex:1" onclick="ouvrirModalVentePDV(this.dataset.id)" data-id="'+p.id+'">💰 Vente</button>'
+          +'<button class="btn btn-d btn-sm" onclick="ouvrirModalCreerPDV(this.dataset.id)" data-id="'+p.id+'">&#x270F;&#xFE0F;</button>'
           +'<button class="btn btn-sm" style="background:#FEE2E2;color:#F87171;border:1.5px solid #FECDD3;border-radius:7px;padding:5px 8px;font-size:12px;cursor:pointer" onclick="supprimerPDV(this.dataset.id)" data-id="'+p.id+'">&#x1F5D1;</button>'
           +'</div>'
           +'</div>'
@@ -7415,6 +7456,73 @@ function rafraichirPDV(){
       }).join('')
     }
   }
+}
+
+// ── Enregistrer une vente pour un point de vente ──────────────
+function ouvrirModalVentePDV(pdvId){
+  var pdv = POINTS_DE_VENTE.find(function(p){ return p.id===pdvId })
+  if(!pdv) return
+  document.getElementById('vpdv-titre').textContent = '💰 Enregistrer une vente — '+pdv.nom
+  document.getElementById('vpdv-pdv-id').value = pdvId
+  document.getElementById('vpdv-date').value = new Date().toISOString().split('T')[0]
+  document.getElementById('vpdv-qte').value = '1'
+  document.getElementById('vpdv-pu').value = ''
+  document.getElementById('vpdv-total').textContent = '0 GNF'
+
+  var sel = document.getElementById('vpdv-produit')
+  sel.innerHTML = '<option value="">Sélectionner un produit...</option>'
+  ;(pdv.produits||[]).forEach(function(id){
+    var prod = PDV_CATALOGUE.find(function(x){ return x.id===id })
+    if(!prod) return
+    var opt = document.createElement('option')
+    opt.value = prod.id
+    opt.textContent = prod.nom
+    sel.appendChild(opt)
+  })
+  document.getElementById('modal-vente-pdv').classList.add('open')
+}
+
+function majPrixVentePDV(sel){
+  var prod = PDV_CATALOGUE.find(function(x){ return x.id===sel.value })
+  if(!prod) return
+  var pu = prod.id==='ad50' ? getPrixAliment().dem50 : prod.id==='ap50' ? getPrixAliment().pont50 : prod.pu
+  document.getElementById('vpdv-pu').value = pu
+  calcTotalVentePDV()
+}
+
+function calcTotalVentePDV(){
+  var qte = parseFloat(document.getElementById('vpdv-qte').value)||0
+  var pu  = parseFloat(document.getElementById('vpdv-pu').value)||0
+  document.getElementById('vpdv-total').textContent = (qte*pu).toLocaleString('fr-FR')+' GNF'
+}
+
+function enregistrerVentePDV(){
+  var pdvId = document.getElementById('vpdv-pdv-id').value
+  var pdv = POINTS_DE_VENTE.find(function(p){ return p.id===pdvId })
+  if(!pdv){ alert('Point de vente introuvable.'); return }
+  var prodSel = document.getElementById('vpdv-produit')
+  if(!prodSel.value){ alert('Sélectionnez un produit.'); return }
+  var qte = parseFloat(document.getElementById('vpdv-qte').value)||0
+  var pu  = parseFloat(document.getElementById('vpdv-pu').value)||0
+  if(qte<=0){ alert('Quantité invalide.'); return }
+
+  pdv.ventes = pdv.ventes || []
+  pdv.ventes.unshift({
+    id: Date.now(),
+    date: document.getElementById('vpdv-date').value,
+    produit: prodSel.value,
+    produitNom: prodSel.options[prodSel.selectedIndex].text,
+    qte: qte,
+    pu: pu,
+    montant: qte*pu
+  })
+  pdv.ca = pdv.ventes.reduce(function(s,v){ return s+(v.montant||0) },0)
+
+  var msg = document.getElementById('vente-pdv-success')
+  if(msg){ msg.style.display='block'; setTimeout(function(){ msg.style.display='none' },2000) }
+  setTimeout(function(){ document.getElementById('modal-vente-pdv').classList.remove('open') }, 700)
+  rafraichirPDV()
+  setTimeout(autosave, 100)
 }
 
 function exporterPDV(){
