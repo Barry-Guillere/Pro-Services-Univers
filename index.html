@@ -3030,8 +3030,8 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
       <div class="mf-row">
         <div><label class="mf-label">Formule *</label>
           <select class="mf-select" id="prod-formule">
-            <option value="p1">Formule Pondeuses Phase 1</option>
-            <option value="p2">Formule Pondeuses Phase 2</option>
+            <option value="ponte">Aliment Ponte (formule complète)</option>
+            <option value="demarrage">Aliment Démarrage (formule complète)</option>
             <option value="comm">Aliment commercial 50kg</option>
           </select></div>
         <div><label class="mf-label">Date de fabrication</label><input type="date" class="mf-input" id="prod-date"></div>
@@ -5963,39 +5963,39 @@ var FORMULES = {
     nom: 'Aliment Ponte (formule complète)',
     cr: 0,
     ingredients: [
-      {nom:'Maïs grain',          pct:58.0, color:'#F59E0B'},
-      {nom:'Tourteau de soja',    pct:20.0, color:'#3B82F6'},
-      {nom:'Son de blé',          pct:10.0, color:'#D97706'},
-      {nom:'Farine de poisson',   pct:4.0,  color:'#EF4444'},
-      {nom:'Coquillage',          pct:4.0,  color:'#8B5CF6'},
-      {nom:'Phosphate bicalcique',pct:1.5,  color:'#06B6D4'},
-      {nom:'Calcaire',            pct:1.5,  color:'#6B7280'},
-      {nom:'Prémix ponte',        pct:0.5,  color:'#10B981'},
-      {nom:'Sel',                 pct:0.5,  color:'#F3F4F6'}
+      {nom:'Maïs grain',          pct:58.0, color:'#F59E0B', cout:300},
+      {nom:'Tourteau de soja',    pct:20.0, color:'#3B82F6', cout:550},
+      {nom:'Son de blé',          pct:10.0, color:'#D97706', cout:200},
+      {nom:'Farine de poisson',   pct:4.0,  color:'#EF4444', cout:900},
+      {nom:'Coquillage',          pct:4.0,  color:'#8B5CF6', cout:150},
+      {nom:'Phosphate bicalcique',pct:1.5,  color:'#06B6D4', cout:700},
+      {nom:'Calcaire',            pct:1.5,  color:'#6B7280', cout:100},
+      {nom:'Prémix ponte',        pct:0.5,  color:'#10B981', cout:2500},
+      {nom:'Sel',                 pct:0.5,  color:'#F3F4F6', cout:150}
     ]
   },
   demarrage: {
     nom: 'Aliment Démarrage (formule complète)',
     cr: 0,
     ingredients: [
-      {nom:'Maïs grain',          pct:55.0, color:'#F59E0B'},
-      {nom:'Tourteau de soja',    pct:28.0, color:'#3B82F6'},
-      {nom:'Son de blé',          pct:8.0,  color:'#D97706'},
-      {nom:'Farine de poisson',   pct:5.0,  color:'#EF4444'},
-      {nom:'Phosphate bicalcique',pct:1.5,  color:'#06B6D4'},
-      {nom:'Calcaire',            pct:1.0,  color:'#6B7280'},
-      {nom:'Prémix démarrage',    pct:1.0,  color:'#10B981'},
-      {nom:'Sel',                 pct:0.5,  color:'#F3F4F6'}
+      {nom:'Maïs grain',          pct:55.0, color:'#F59E0B', cout:300},
+      {nom:'Tourteau de soja',    pct:28.0, color:'#3B82F6', cout:550},
+      {nom:'Son de blé',          pct:8.0,  color:'#D97706', cout:200},
+      {nom:'Farine de poisson',   pct:5.0,  color:'#EF4444', cout:900},
+      {nom:'Phosphate bicalcique',pct:1.5,  color:'#06B6D4', cout:700},
+      {nom:'Calcaire',            pct:1.0,  color:'#6B7280', cout:100},
+      {nom:'Prémix démarrage',    pct:1.0,  color:'#10B981', cout:2500},
+      {nom:'Sel',                 pct:0.5,  color:'#F3F4F6', cout:150}
     ]
   },
   comm: {
     nom: 'Aliment commercial (simplifié)',
     cr: 0,
     ingredients: [
-      {nom:'Maïs grain',         pct:68.0, color:'#F59E0B'},
-      {nom:'Tourteau de soja',   pct:17.0, color:'#3B82F6'},
-      {nom:'Son de blé',         pct:12.0, color:'#D97706'},
-      {nom:'Prémix ponte',       pct:3.0,  color:'#10B981'}
+      {nom:'Maïs grain',         pct:68.0, color:'#F59E0B', cout:300},
+      {nom:'Tourteau de soja',   pct:17.0, color:'#3B82F6', cout:550},
+      {nom:'Son de blé',         pct:12.0, color:'#D97706', cout:200},
+      {nom:'Prémix ponte',       pct:3.0,  color:'#10B981', cout:2500}
     ]
   }
 }
