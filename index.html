@@ -8631,16 +8631,17 @@ function genererRapportPDF(type){
 
   // Collecter données réelles
   var totalOeufs = 0, marchands = 0
+  var mortsBat = {}
   ;['a','b','c'].forEach(function(bat){
-    if(typeof BAT_INFO!=='undefined' && BAT_INFO[bat]){
-      var info = BAT_INFO[bat]
-      totalOeufs += (info.lastTotal||0)*30
-      marchands  += (info.lastMarch||0)
-    }
+    var p = typeof PONTES_SESSION!=='undefined' ? PONTES_SESSION[bat] : null
+    totalOeufs += p ? p.total*30 : 0
+    marchands  += p ? p.march : 0
+    mortsBat[bat] = typeof MORTALITES_LOG!=='undefined' ? MORTALITES_LOG.filter(function(m){ return m.bat===bat.toUpperCase() }).reduce(function(s,m){ return s+(m.nb||0) },0) : 0
   })
-  var tauxMoy = typeof BAT_INFO!=='undefined' ? (
-    ((BAT_INFO.a.lastTaux||0)+(BAT_INFO.b.lastTaux||0)+(BAT_INFO.c.lastTaux||0))/3
-  ).toFixed(1) : '—'
+  var tauxA = (typeof PONTES_SESSION!=='undefined' && PONTES_SESSION.a) ? PONTES_SESSION.a.taux : 0
+  var tauxB = (typeof PONTES_SESSION!=='undefined' && PONTES_SESSION.b) ? PONTES_SESSION.b.taux : 0
+  var tauxC = (typeof PONTES_SESSION!=='undefined' && PONTES_SESSION.c) ? PONTES_SESSION.c.taux : 0
+  var tauxMoy = ((tauxA+tauxB+tauxC)/3).toFixed(1)
   var moisStr = now.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})
   var mois = now.getMonth()+1, annee = now.getFullYear()
   var caFin = typeof FIN!=='undefined' ? FIN.operations.filter(function(o){
@@ -8661,15 +8662,17 @@ function genererRapportPDF(type){
   if(typeof BAT_INFO!=='undefined'){
     ;['a','b','c'].forEach(function(bat){
       var info = BAT_INFO[bat]
-      var taux = info.lastTaux||0
+      var p = typeof PONTES_SESSION!=='undefined' ? PONTES_SESSION[bat] : null
+      var total = p ? p.total : 0
+      var taux = p ? p.taux : 0
       var col = taux>=82?'#059669':taux>=75?'#D97706':'#DC2626'
       var statut = taux>=82?'✅ Normal':taux>=75?'⚠️ Moyen':'❌ Alerte'
       lignesBat += '<tr><td><strong>Bâtiment '+bat.toUpperCase()+'</strong></td>'
         +'<td>'+(info.lot||'—')+' · '+(info.race||'—')+'</td>'
-        +'<td style="text-align:right">'+(info.lastTotal||0)+' alv.</td>'
-        +'<td style="text-align:right">'+((info.lastTotal||0)*30).toLocaleString('fr-FR')+' œufs</td>'
+        +'<td style="text-align:right">'+total+' alv.</td>'
+        +'<td style="text-align:right">'+(total*30).toLocaleString('fr-FR')+' œufs</td>'
         +'<td style="font-weight:700;text-align:right;color:'+col+'">'+taux+'%</td>'
-        +'<td style="color:#DC2626">'+0+'</td>'
+        +'<td style="color:#DC2626">'+(mortsBat[bat]||0)+'</td>'
         +'<td>'+statut+'</td></tr>'
     })
   }
