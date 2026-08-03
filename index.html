@@ -7913,6 +7913,7 @@ function enregistrerFactureCommerce(imprimer){
 
   // Mettre à jour le solde client
   if(client) client.solde = (client.solde||0) + solde
+  var depassementCredit = client && client.credit>0 && client.solde>client.credit
 
   // ── Connexion automatique vers Finance : encaissement reçu à la facturation ──
   var montantRecu = total - solde  // = acompte si partiel, = total si payée intégralement
@@ -7944,6 +7945,9 @@ function enregistrerFactureCommerce(imprimer){
   document.getElementById('modal-facture-commerce').classList.remove('open')
   rafraichirCommerce()
   setTimeout(autosave,100)
+  if(depassementCredit){
+    alert('⚠️ Attention : '+client.nom+' dépasse sa limite de crédit configurée ('+client.solde.toLocaleString('fr-FR')+' GNF / limite '+client.credit.toLocaleString('fr-FR')+' GNF).')
+  }
   if(imprimer) imprimerFactureCommerce(facture)
   else alert('Facture '+numFact+' enregistrée !')
 }
