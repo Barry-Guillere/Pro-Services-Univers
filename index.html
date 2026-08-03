@@ -6182,6 +6182,14 @@ function sauvegarderParametres(){
       rappelVaccin: parseInt(val('p-rappel-vac'))||7
     },
     couleur: val('p-couleur') || '#1D9E75',
+    equipe: [1,2,3,4].map(function(n){
+      return {
+        nom:  val('eq-nom-'+n),
+        role: val('eq-role-'+n),
+        tel:  val('eq-tel-'+n),
+        init: val('eq-init-'+n)
+      }
+    }),
     batiments: (function(){
       var old = {}
       try{ var raw = JSON.parse(localStorage.getItem('avi_params_v2')||'{}'); old = raw.batiments||{} }catch(e){}
@@ -6262,6 +6270,14 @@ function chargerParametres(){
   var pa = params.prixAliment || {}
   setVal('p-dem-50',  pa.dem50)
   setVal('p-pont-50', pa.pont50)
+
+  ;(params.equipe||[]).forEach(function(m,i){
+    var n = i+1
+    setVal('eq-nom-'+n,  m.nom)
+    setVal('eq-role-'+n, m.role)
+    setVal('eq-tel-'+n,  m.tel)
+    setVal('eq-init-'+n, m.init)
+  })
 
   var s = params.seuils || {}
   setVal('p-seuil-ponte', s.ponte)
