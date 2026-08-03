@@ -3739,78 +3739,6 @@ function goPage(id,el){
   if(id==='antivol')    setTimeout(function(){try{mettreAJourPageAntivol()}catch(e){}},80)
 }
 
-// ── Bouton "Analyser avec l’IA" du tableau de bord ──────────────────────
-function lancerAnalyseIA(){
-  // 1. Naviguer vers la page IA
-  const navIA = document.getElementById('nav-ai')
-  goPage('ai', navIA)
-
-  // 2. Construire le message contextuel depuis les données réelles du dashboard
-  const globalRate = ((S.rateA + S.rateB + S.rateC) / 3).toFixed(1)
-  const batB = S.rateB.toFixed(1)
-  const ca = Math.round(S.ca).toLocaleString('fr-FR')
-  const tres = Math.round(S.tres).toLocaleString('fr-FR')
-
-  const message =
-    'Voici une synthèse de mon tableau de bord en temps réel. ' +
-    'Taux de ponte global : ' + globalRate + '% ' +
-    '(Bât. A: ' + S.rateA.toFixed(1) + '%, ' +
-    'Bât. B: ' + batB + '% avec délai d’attente Tylosine actif, ' +
-    'Bât. C: ' + S.rateC.toFixed(1) + '%). ' +
-    'CA du jour : ' + ca + ' GNF. ' +
-    'Trésorerie disponible : ' + tres + ' GNF. ' +
-    '4 alertes actives dont 2 critiques. ' +
-    'Analyse ces données et donne-moi les 3 priorités d’action pour aujourd’hui.'
-
-  // 3. Délai pour laisser la page s'afficher, puis envoyer le message
-  setTimeout(()=>{
-    const input = document.getElementById('chat-input')
-    const chatMsgs = document.getElementById('chat-msgs')
-    if(!input || !chatMsgs) return
-
-    // Vider l'input et le remplir
-    input.value = message
-
-    // Ajouter une bulle utilisateur
-    const uDiv = document.createElement('div')
-    uDiv.className = 'msg msg-u'
-    uDiv.innerHTML = '<div class="bubble">📊 Analyse du tableau de bord en temps réel — ' + new Date().toLocaleTimeString('fr-FR') + '</div>'
-    chatMsgs.appendChild(uDiv)
-    chatMsgs.scrollTop = 99999
-
-    // Bulle "en cours"
-    const thinking = document.createElement('div')
-    thinking.className = 'msg msg-ai'
-    thinking.innerHTML = '<div class="bubble" style="color:var(--gray-400)"><em>⟳ Analyse du tableau de bord en cours...</em></div>'
-    chatMsgs.appendChild(thinking)
-    chatMsgs.scrollTop = 99999
-
-    // Réponse IA apres 1.4s
-    setTimeout(()=>{
-      const rateOk = parseFloat(globalRate) >= 82
-      const response =
-        '<strong>📊 Analyse du tableau de bord — ' + new Date().toLocaleTimeString('fr-FR') + '</strong><br><br>' +
-        '<strong>Situation générale :</strong><br>' +
-        '• Taux de ponte global : <strong>' + globalRate + '%</strong> ' + (rateOk ? '✅ Objectif 82% atteint' : '⚠ Sous l’objectif 82%') + '<br>' +
-        '• Bâtiment B : <strong>' + batB + '%</strong> ⚠ en baisse — délai d’attente Tylosine en cours (fin 03/05)<br>' +
-        '• CA du jour : <strong>' + ca + ' GNF</strong><br>' +
-        '• Trésorerie : <strong>' + tres + ' GNF</strong> disponible<br><br>' +
-        '<strong>🔴 Priorités immédiates :</strong><br>' +
-        '1. <strong>Bâtiment B</strong> — inspecter dès la fin du délai d’attente le 03/05. Surveiller consommation eau et litière.<br>' +
-        '2. <strong>Créance Ndione SARL</strong> — 380 000 F en retard de 12 jours. Appel téléphonique aujourd’hui, mise en demeure si pas de réponse sous 48h.<br>' +
-        '3. <strong>Stock tourteau de soja</strong> — 480 kg (seuil 500 kg). Passer commande fournisseur cette semaine (~2 semaines de stock restant).<br><br>' +
-        '<strong>🟡 Points de vigilance :</strong><br>' +
-        '• Assurance véhicule SA-4821-K expire dans 8 jours — contacter l’assureur avant le 22/04.<br>' +
-        '• Barquettes 30 vides : 1 200 unités (seuil 2 000) — planifier réapprovisionnement.<br><br>' +
-        '<em>Je ne peux pas déclencher ces actions automatiquement — votre validation est requise.</em>'
-
-      thinking.innerHTML = '<div class="bubble">' + response + '</div>'
-      chatMsgs.scrollTop = 99999
-      input.value = ''
-    }, 1400)
-  }, 300)
-}
-
 // ══════════════════════════════════════════
 //  ÉTAT DU DASHBOARD
 // ══════════════════════════════════════════
@@ -4020,9 +3948,7 @@ function calculerRappelsVaccins(){
   out.sort(function(a,b){ return a.joursRestants - b.joursRestants })
   return out
 }
-function renderAlerts(){
-  const list=document.getElementById('alerts-list')
-  if(!list) return
+function construireAlertes(){
   const alerts=[]
   const seuilsAlerte = getSeuilsAlerte()
   // Alertes ponte
@@ -4057,6 +3983,31 @@ function renderAlerts(){
   }
   // Vidange
   if(typeof LOG!=='undefined'&&LOG.seuil>0&&LOG.voyDepuis>=LOG.seuil-5) alerts.push({cls:'a-warn',title:'Vidange Golf PSU prochaine',sub:LOG.voyDepuis+'/'+LOG.seuil+' voyages'})
+
+  // Créances clients en retard de paiement
+  if(typeof COMMERCE!=='undefined' && COMMERCE.clients && COMMERCE.factures){
+    var todayCrea = new Date(); todayCrea.setHours(0,0,0,0)
+    COMMERCE.clients.forEach(function(cl){
+      if((cl.solde||0)<=0) return
+      var pireRetard = 0
+      COMMERCE.factures.filter(function(f){ return f.clientId===cl.id && f.solde>0 && f.echeance }).forEach(function(f){
+        var ech = new Date(f.echeance); ech.setHours(0,0,0,0)
+        var j = Math.round((todayCrea.getTime()-ech.getTime())/86400000)
+        if(j>pireRetard) pireRetard = j
+      })
+      if(pireRetard>0) alerts.push({cls:'a-warn',title:'Créance en retard — '+cl.nom,sub:(cl.solde||0).toLocaleString('fr-FR')+' GNF en retard de '+pireRetard+'j'})
+    })
+  }
+
+  return alerts
+}
+
+function renderAlerts(){
+  const list=document.getElementById('alerts-list')
+  if(!list) return
+  const alerts = construireAlertes()
+  var badge = document.getElementById('alert-count-badge')
+  if(badge) badge.textContent = String(alerts.length)
 
   if(alerts.length===0){
     list.innerHTML='<div style="text-align:center;padding:24px;color:var(--gray-400)"><div style="font-size:24px;margin-bottom:6px">✅</div><div style="font-size:13px">Aucune alerte active</div></div>'
