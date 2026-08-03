@@ -7740,10 +7740,23 @@ function enregistrerClient(){
 }
 
 // ── FACTURES — Gestion des lignes ─────────────────────────────
+function getPrixAliment(){
+  var prix = { dem50:16000, pont50:18000 }
+  try{
+    var prms = JSON.parse(localStorage.getItem('avi_params_v2')||'null')
+    if(prms && prms.prixAliment){
+      if(prms.prixAliment.dem50) prix.dem50 = prms.prixAliment.dem50
+      if(prms.prixAliment.pont50) prix.pont50 = prms.prixAliment.pont50
+    }
+  }catch(e){}
+  return prix
+}
 function majPrixLigne(sel){
   var parts = sel.value.split('|')
   var ligne = sel.closest('.fact-com-ligne')
   var pu = ligne.querySelector('.fact-pu')
+  if(parts[0]==='ad50') parts[1] = getPrixAliment().dem50
+  if(parts[0]==='ap50') parts[1] = getPrixAliment().pont50
   if(pu && parts[1]) pu.value = parts[1]
   // Barquette/alvéole d'œufs : demander de quel bâtiment provient le stock
   var batRow = ligne.querySelector('.fact-bat-row')
@@ -7963,6 +7976,8 @@ function _decrementerStockLigneFacture(ligne, numFact, date, resp){
 function majPrixLigneBDC(sel){
   var parts = sel.value.split('|')
   var pu = sel.closest('.bdc-ligne').querySelector('.bdc-pu')
+  if(parts[0]==='ad50') parts[1] = getPrixAliment().dem50
+  if(parts[0]==='ap50') parts[1] = getPrixAliment().pont50
   if(pu && parts[1]) pu.value = parts[1]
   calcLigneBDC(sel)
 }
