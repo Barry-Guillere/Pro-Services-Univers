@@ -2675,10 +2675,8 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
     </div>
     <div class="card">
       <div class="sec-title">📋 Journal des accès</div>
-      <div style="display:flex;flex-direction:column;gap:0">
-        <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--gray-100)"><span class="badge b-green" style="font-size:10px">OK</span><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Connexion — Amadou Sadio Barry</div><div style="font-size:11px;color:var(--gray-500)">Aujourd'hui · PDG</div></div></div>
-        <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--gray-100)"><span class="badge b-green" style="font-size:10px">OK</span><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Activation licence AVI-BARR-2026-SENE</div><div style="font-size:11px;color:var(--gray-500)">15/04/2026 · Système</div></div></div>
-        <div style="display:flex;align-items:center;gap:10px;padding:9px 0"><span class="badge b-blue" style="font-size:10px">INFO</span><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Démarrage application</div><div style="font-size:11px;color:var(--gray-500)">15/04/2026 · Système</div></div></div>
+      <div id="av-journal-list" style="display:flex;flex-direction:column;gap:0">
+        <div style="text-align:center;color:var(--gray-400);padding:12px;font-size:12px">Chargement...</div>
       </div>
     </div>
   </div>
@@ -3433,11 +3431,6 @@ function chargerAdminJournal(){
   if(!tbody) return
   var entries = []
   try{ entries = JSON.parse(localStorage.getItem('avi_journal_acces')||'[]') }catch(e){}
-  if(currentUser){
-    entries.unshift({user:currentUser.name||'—', role:currentUser.role||'—', date:new Date().toLocaleString('fr-FR')})
-    entries = entries.slice(0,20)
-    try{ localStorage.setItem('avi_journal_acces', JSON.stringify(entries)) }catch(e){}
-  }
   if(entries.length===0){
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray-400);padding:12px">Aucune connexion enregistrée</td></tr>'
     return
@@ -3660,12 +3653,10 @@ function _activerSession(u, email){
     }, 300);
     // Journal accès
     try{
-      var k = typeof AVI_KEY !== 'undefined' ? AVI_KEY : 'avi_data_v3';
-      var d = JSON.parse(localStorage.getItem(k)||'{}');
-      d.JOURNAL_ACCES = d.JOURNAL_ACCES || [];
-      d.JOURNAL_ACCES.unshift({ user: u.name, role: u.role, date: new Date().toLocaleString('fr-FR') });
-      d.JOURNAL_ACCES = d.JOURNAL_ACCES.slice(0, 50);
-      localStorage.setItem(k, JSON.stringify(d));
+      var entriesJournal = JSON.parse(localStorage.getItem('avi_journal_acces')||'[]');
+      entriesJournal.unshift({ user: u.name, role: u.role, date: new Date().toLocaleString('fr-FR') });
+      entriesJournal = entriesJournal.slice(0, 50);
+      localStorage.setItem('avi_journal_acces', JSON.stringify(entriesJournal));
     }catch(x){}
   }, 200);
 }
@@ -6643,6 +6634,25 @@ function mettreAJourPageAntivol(){
     try{ savedDelay = parseInt(localStorage.getItem('av_lock_delay_min')) || 5 }catch(e){}
     delaySel.value = String(savedDelay)
   }
+  chargerJournalAntivol()
+}
+
+function chargerJournalAntivol(){
+  var list = document.getElementById('av-journal-list')
+  if(!list) return
+  var entries = []
+  try{ entries = JSON.parse(localStorage.getItem('avi_journal_acces')||'[]') }catch(e){}
+  if(entries.length===0){
+    list.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:12px;font-size:12px">Aucune connexion enregistrée</div>'
+    return
+  }
+  list.innerHTML = entries.slice(0,8).map(function(e){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--gray-100)">'
+      +'<span class="badge b-green" style="font-size:10px">OK</span>'
+      +'<div style="flex:1"><div style="font-size:12.5px;font-weight:600">Connexion — '+esc(e.user||'—')+'</div>'
+      +'<div style="font-size:11px;color:var(--gray-500)">'+esc(e.date||'—')+' · '+esc(e.role||'—')+'</div></div>'
+      +'</div>'
+  }).join('')
 }
 
 
