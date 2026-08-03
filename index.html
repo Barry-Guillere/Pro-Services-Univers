@@ -701,21 +701,31 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
       <div style="margin-bottom:12px">
         <div style="font-size:12px;font-weight:800;color:var(--gray-600);text-transform:uppercase;margin-bottom:8px">Articles facturés</div>
         <div id="fact-com-lignes">
-          <div class="fact-com-ligne" style="display:grid;grid-template-columns:2fr 0.7fr 1fr 1fr 40px;gap:6px;align-items:center;margin-bottom:6px">
-            <select class="fact-prod-sel" onchange="majPrixLigne(this)" style="padding:7px 8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12.5px;font-family:inherit;outline:none">
-              <option value="">Produit...</option>
-              <option value="b30|1800">Barquette 30 œufs</option>
-              <option value="alv|1800">Alvéole œufs</option>
-              <option value="poul|4500">Poulet réforme</option>
-              <option value="fient|1500">Fiente séchée</option>
-              <option value="ad50|16000">Aliment Dém. 50kg</option>
-              <option value="ap50|18000">Aliment Ponte 50kg</option>
-              <option value="autre|0">Autre produit</option>
-            </select>
-            <input type="number" class="fact-qte" placeholder="Qté" min="1" value="1" oninput="calcLigne(this)" style="padding:7px 8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:inherit;outline:none;text-align:center">
-            <input type="number" class="fact-pu" placeholder="Prix/u (GNF)" min="0" oninput="calcLigne(this)" style="padding:7px 8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:inherit;outline:none">
-            <div class="fact-total-ligne" style="padding:7px 10px;background:var(--gray-50);border-radius:8px;font-size:13px;font-weight:700;color:var(--brand);text-align:right">0 GNF</div>
-            <button onclick="supprimerLigne(this)" style="width:32px;height:32px;background:#FEE2E2;color:#F87171;border:none;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">×</button>
+          <div class="fact-com-ligne" style="margin-bottom:6px">
+            <div style="display:grid;grid-template-columns:2fr 0.7fr 1fr 1fr 40px;gap:6px;align-items:center">
+              <select class="fact-prod-sel" onchange="majPrixLigne(this)" style="padding:7px 8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:12.5px;font-family:inherit;outline:none">
+                <option value="">Produit...</option>
+                <option value="b30|1800">Barquette 30 œufs</option>
+                <option value="alv|1800">Alvéole œufs</option>
+                <option value="poul|4500">Poulet réforme</option>
+                <option value="fient|1500">Fiente séchée</option>
+                <option value="ad50|16000">Aliment Dém. 50kg</option>
+                <option value="ap50|18000">Aliment Ponte 50kg</option>
+                <option value="autre|0">Autre produit</option>
+              </select>
+              <input type="number" class="fact-qte" placeholder="Qté" min="1" value="1" oninput="calcLigne(this)" style="padding:7px 8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:inherit;outline:none;text-align:center">
+              <input type="number" class="fact-pu" placeholder="Prix/u (GNF)" min="0" oninput="calcLigne(this)" style="padding:7px 8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+              <div class="fact-total-ligne" style="padding:7px 10px;background:var(--gray-50);border-radius:8px;font-size:13px;font-weight:700;color:var(--brand);text-align:right">0 GNF</div>
+              <button onclick="supprimerLigne(this)" style="width:32px;height:32px;background:#FEE2E2;color:#F87171;border:none;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">×</button>
+            </div>
+            <div class="fact-bat-row" style="display:none;align-items:center;margin-top:5px">
+              <select class="fact-bat-sel" style="padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:7px;font-size:12px;font-family:inherit;outline:none">
+                <option value="A">🏠 Bâtiment A</option>
+                <option value="B">🏠 Bâtiment B</option>
+                <option value="C">🏠 Bâtiment C</option>
+              </select>
+              <span style="font-size:11px;color:var(--gray-400);margin-left:6px">Bâtiment source (stock œufs)</span>
+            </div>
           </div>
         </div>
         <button class="btn btn-d btn-sm" onclick="ajouterLigne()" style="margin-top:4px">+ Ajouter une ligne</button>
@@ -860,6 +870,7 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
         <button class="btn btn-d btn-sm" onclick="filtrerStock('oeufs')">🥚 Œufs</button>
         <button class="btn btn-d btn-sm" onclick="filtrerStock('aliment')">🌾 Aliment</button>
         <button class="btn btn-d btn-sm" onclick="filtrerStock('barquettes')">📦 Barquettes</button>
+        <button class="btn btn-d btn-sm" onclick="filtrerStock('autre')">🐓 Autres</button>
         <button class="btn btn-d btn-sm" onclick="filtrerStock('tous')">Tout</button>
       </div>
     </div>
@@ -4394,7 +4405,7 @@ function syncToSupabase(data){
     return {id:cl.id, nom:cl.nom||'', type:cl.type||'', telephone:cl.tel||'', email:cl.email||'', adresse:cl.adresse||'', delai_paiement:30, plafond_credit:cl.credit||0, solde:cl.solde||0}
   })
   var factures = (data.COMMERCE_factures||[]).map(function(f){
-    return {id:f.id, numero:f.num||'', date:f.date||'', client_id:f.clientId||'', client_nom:f.clientNom||'', articles:f.articles||[], total:f.total||0, acompte:f.acompte||0, solde:f.solde||0, paiement:f.paiement||'', statut:f.statut||''}
+    return {id:f.id, numero:f.num||'', date:f.date||'', client_id:f.clientId||'', client_nom:f.clientNom||'', articles:f.lignes||[], total:f.total||0, acompte:f.acompte||0, solde:f.solde||0, paiement:f.paiement||'', statut:f.statut||''}
   })
   var pdv = (data.POINTS_DE_VENTE||[]).map(function(p){
     return {id:p.id, nom:p.nom||'', zone:p.zone||'', adresse:p.adresse||'', gerant_select:p.gerantSelect||'', gerant_nom:p.gerantNom||'', gerant_tel:p.gerantTel||'', commission:p.commission||'', produits:p.produits||[], stock:p.stock||{}, ventes:p.ventes||[], ca:p.ca||0, statut:p.statut||'', date_creation:p.dateCreation||null}
@@ -4496,7 +4507,7 @@ function pullFromSupabase(applyIfNewer, cb){
     if(typeof COMMERCE!=='undefined'){
       var clientsRemote = clients.map(function(cl){ return {id:cl.id, nom:cl.nom, type:cl.type, tel:cl.telephone, email:cl.email, adresse:cl.adresse, delai:cl.delai_paiement, plafond:cl.plafond_credit, solde:cl.solde} })
       COMMERCE.clients = _fusionnerParId(COMMERCE.clients, clientsRemote)
-      var facturesRemote = factures.map(function(f){ return {id:f.id, num:f.numero, date:f.date, clientId:f.client_id, clientNom:f.client_nom, articles:f.articles, total:f.total, acompte:f.acompte, solde:f.solde, paiement:f.paiement, statut:f.statut} })
+      var facturesRemote = factures.map(function(f){ return {id:f.id, num:f.numero, date:f.date, clientId:f.client_id, clientNom:f.client_nom, lignes:f.articles||[], total:f.total, acompte:f.acompte, solde:f.solde, paiement:f.paiement, statut:f.statut} })
       COMMERCE.factures = _fusionnerParId(COMMERCE.factures, facturesRemote)
     }
     if(typeof POINTS_DE_VENTE!=='undefined'){
@@ -6592,6 +6603,9 @@ var STOCK_CATALOGUE = [
   { id:'alim_ponte',     nom:'Aliment Ponte',        cat:'aliment',    unite:'sac',     seuil:10,  prix:0 },
   // ── Barquettes ────────────────────────────────────────
   { id:'barquettes',     nom:'Barquettes',           cat:'barquettes', unite:'paquet',  seuil:20,  prix:0 },
+  // ── Autres produits vendus en Commerce ─────────────────
+  { id:'poulet_reforme', nom:'Poulet réforme',       cat:'autre',      unite:'tête',    seuil:5,   prix:0 },
+  { id:'fiente_sechee',  nom:'Fiente séchée',        cat:'autre',      unite:'sac',     seuil:10,  prix:0 },
 ]
 
 // État du stock : { id: { qte, prix_moyen } }
@@ -7602,8 +7616,12 @@ function enregistrerClient(){
 // ── FACTURES — Gestion des lignes ─────────────────────────────
 function majPrixLigne(sel){
   var parts = sel.value.split('|')
-  var pu = sel.closest('.fact-com-ligne').querySelector('.fact-pu')
+  var ligne = sel.closest('.fact-com-ligne')
+  var pu = ligne.querySelector('.fact-pu')
   if(pu && parts[1]) pu.value = parts[1]
+  // Barquette/alvéole d'œufs : demander de quel bâtiment provient le stock
+  var batRow = ligne.querySelector('.fact-bat-row')
+  if(batRow) batRow.style.display = (parts[0]==='b30'||parts[0]==='alv') ? 'flex' : 'none'
   calcLigne(sel)
 }
 
@@ -7697,7 +7715,8 @@ function enregistrerFactureCommerce(imprimer){
     var pu  = parseFloat(l.querySelector('.fact-pu').value)||0
     if(!prodSel.value||qte<=0) return
     var prodNom = prodSel.options[prodSel.selectedIndex].text
-    lignes.push({prod:prodSel.value.split('|')[0], nom:prodNom, qte:qte, pu:pu, tot:qte*pu})
+    var batSel = l.querySelector('.fact-bat-sel')
+    lignes.push({prod:prodSel.value.split('|')[0], nom:prodNom, qte:qte, pu:pu, tot:qte*pu, bat:batSel?batSel.value:''})
     total += qte*pu
   })
   if(lignes.length===0){ alert('Ajoutez au moins un produit.'); return }
@@ -7748,11 +7767,70 @@ function enregistrerFactureCommerce(imprimer){
     try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
   }
 
+  // ── Connexion automatique vers Stock : décrémenter les articles vendus ──
+  if(typeof STOCK_QTE !== 'undefined'){
+    var respStock = currentUser ? (currentUser.name||'') : 'Admin'
+    lignes.forEach(function(l){
+      _decrementerStockLigneFacture(l, numFact, facture.date, respStock)
+    })
+    try{ if(typeof rafraichirStock==='function') rafraichirStock() }catch(e){}
+  }
+
   document.getElementById('modal-facture-commerce').classList.remove('open')
   rafraichirCommerce()
   setTimeout(autosave,100)
   if(imprimer) imprimerFactureCommerce(facture)
   else alert('Facture '+numFact+' enregistrée !')
+}
+
+// ── Correspondance produits Commerce -> articles Stock ──
+// b30/alv nécessitent un bâtiment (choisi sur la ligne) pour savoir quel
+// stock d'œufs décrémenter ; ad50/ap50/poul/fient sont sans ambiguïté ;
+// "autre" (texte libre) n'a pas d'équivalent en Stock.
+function _decrementerStockLigneFacture(ligne, numFact, date, resp){
+  var mouvements = []  // [{prodId, qte}]
+  switch(ligne.prod){
+    case 'b30':
+      mouvements.push({prodId:'barquettes', qte:ligne.qte})
+      mouvements.push({prodId:'oeuf_bloc_'+(ligne.bat||'A').toLowerCase(), qte:ligne.qte*30})
+      break
+    case 'alv':
+      mouvements.push({prodId:'oeuf_bloc_'+(ligne.bat||'A').toLowerCase(), qte:ligne.qte})
+      break
+    case 'poul':
+      mouvements.push({prodId:'poulet_reforme', qte:ligne.qte})
+      break
+    case 'fient':
+      mouvements.push({prodId:'fiente_sechee', qte:ligne.qte})
+      break
+    case 'ad50':
+      mouvements.push({prodId:'alim_demarrage', qte:ligne.qte})
+      break
+    case 'ap50':
+      mouvements.push({prodId:'alim_ponte', qte:ligne.qte})
+      break
+    default:
+      return  // "autre" : pas de correspondance stock
+  }
+  mouvements.forEach(function(m){
+    var prod = STOCK_CATALOGUE.find(function(p){ return p.id===m.prodId })
+    var curr = STOCK_QTE[m.prodId] || {qte:0,prix_moyen:0}
+    STOCK_QTE[m.prodId] = { qte:curr.qte-m.qte, prix_moyen:curr.prix_moyen }
+    STOCK_MOUVEMENTS.unshift({
+      id: Date.now()+Math.floor(Math.random()*1000),
+      date: date,
+      prodId: m.prodId,
+      prodNom: prod?prod.nom:m.prodId,
+      type: 'sortie',
+      qte: m.qte,
+      unite: prod?prod.unite:'',
+      prix: curr.prix_moyen,
+      total: Math.round(m.qte*curr.prix_moyen),
+      motif: 'vente',
+      bon: numFact,
+      resp: resp
+    })
+  })
 }
 
 // ── BDC — Gestion des lignes ──────────────────────────────────
@@ -8079,7 +8157,7 @@ function rafraichirCommerce(){
       tbodyFact.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--gray-400);padding:20px">Aucune facture</td></tr>'
     } else {
       tbodyFact.innerHTML = facts.map(function(f){
-        var prods = esc(f.lignes.map(function(l){return l.nom.split(' ').slice(0,2).join(' ')}).slice(0,2).join(', '))
+        var prods = esc((f.lignes||[]).map(function(l){return l.nom.split(' ').slice(0,2).join(' ')}).slice(0,2).join(', '))
         return '<tr>'
           +'<td style="font-family:monospace;font-size:12px">'+esc(f.num)+'</td>'
           +'<td>'+esc(f.date)+'</td>'
@@ -8110,7 +8188,7 @@ function rafraichirCommerce(){
       tbodyBDC.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--gray-400);padding:20px">Aucun bon de commande</td></tr>'
     } else {
       tbodyBDC.innerHTML = bdcs.map(function(b){
-        var prods = esc(b.lignes.map(function(l){return l.nom.split(' ').slice(0,2).join(' ')}).slice(0,2).join(', '))
+        var prods = esc((b.lignes||[]).map(function(l){return l.nom.split(' ').slice(0,2).join(' ')}).slice(0,2).join(', '))
         return '<tr>'
           +'<td style="font-family:monospace;font-size:12px">'+esc(b.num)+'</td>'
           +'<td>'+esc(b.date)+'</td>'
