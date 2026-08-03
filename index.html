@@ -2834,7 +2834,13 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
           <div class="form-field" style="margin-bottom:8px"><label>Numéro de lot</label><input type="text" id="bat-a-lot" placeholder="ex: LOT-2024-001" oninput="marquerModifications()"></div>
           <div class="form-field" style="margin-bottom:8px"><label>Race</label><input type="text" id="bat-a-race" placeholder="ex: ISA Brown" oninput="marquerModifications()"></div>
           <div class="form-field" style="margin-bottom:8px"><label>Effectif</label><input type="number" id="bat-a-eff" placeholder="ex: 8000" min="0" oninput="marquerModifications()"></div>
-          <div class="form-field" style="margin:0"><label>Objectif ponte (%)</label><input type="number" id="bat-a-obj" placeholder="ex: 82" min="0" max="100" oninput="marquerModifications()"></div>
+          <div class="form-field" style="margin-bottom:8px"><label>Objectif ponte (%)</label><input type="number" id="bat-a-obj" placeholder="ex: 82" min="0" max="100" oninput="marquerModifications()"></div>
+          <div class="form-field" style="margin:0"><label>Statut</label>
+            <select id="bat-a-statut" onchange="marquerModifications()" style="appearance:auto">
+              <option value="ponte">🥚 En ponte</option>
+              <option value="croissance">🐣 En croissance</option>
+            </select>
+          </div>
         </div>
 
         <!-- Bâtiment B -->
@@ -2843,7 +2849,13 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
           <div class="form-field" style="margin-bottom:8px"><label>Numéro de lot</label><input type="text" id="bat-b-lot" placeholder="ex: LOT-2024-002" oninput="marquerModifications()"></div>
           <div class="form-field" style="margin-bottom:8px"><label>Race</label><input type="text" id="bat-b-race" placeholder="ex: ISA Brown" oninput="marquerModifications()"></div>
           <div class="form-field" style="margin-bottom:8px"><label>Effectif</label><input type="number" id="bat-b-eff" placeholder="ex: 8000" min="0" oninput="marquerModifications()"></div>
-          <div class="form-field" style="margin:0"><label>Objectif ponte (%)</label><input type="number" id="bat-b-obj" placeholder="ex: 82" min="0" max="100" oninput="marquerModifications()"></div>
+          <div class="form-field" style="margin-bottom:8px"><label>Objectif ponte (%)</label><input type="number" id="bat-b-obj" placeholder="ex: 82" min="0" max="100" oninput="marquerModifications()"></div>
+          <div class="form-field" style="margin:0"><label>Statut</label>
+            <select id="bat-b-statut" onchange="marquerModifications()" style="appearance:auto">
+              <option value="ponte">🥚 En ponte</option>
+              <option value="croissance">🐣 En croissance</option>
+            </select>
+          </div>
         </div>
 
         <!-- Bâtiment C -->
@@ -2852,7 +2864,13 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
           <div class="form-field" style="margin-bottom:8px"><label>Numéro de lot</label><input type="text" id="bat-c-lot" placeholder="ex: LOT-2024-003" oninput="marquerModifications()"></div>
           <div class="form-field" style="margin-bottom:8px"><label>Race</label><input type="text" id="bat-c-race" placeholder="ex: Lohmann Brown" oninput="marquerModifications()"></div>
           <div class="form-field" style="margin-bottom:8px"><label>Effectif</label><input type="number" id="bat-c-eff" placeholder="ex: 8000" min="0" oninput="marquerModifications()"></div>
-          <div class="form-field" style="margin:0"><label>Objectif ponte (%)</label><input type="number" id="bat-c-obj" placeholder="ex: 82" min="0" max="100" oninput="marquerModifications()"></div>
+          <div class="form-field" style="margin-bottom:8px"><label>Objectif ponte (%)</label><input type="number" id="bat-c-obj" placeholder="ex: 82" min="0" max="100" oninput="marquerModifications()"></div>
+          <div class="form-field" style="margin:0"><label>Statut</label>
+            <select id="bat-c-statut" onchange="marquerModifications()" style="appearance:auto">
+              <option value="ponte">🥚 En ponte</option>
+              <option value="croissance">🐣 En croissance</option>
+            </select>
+          </div>
         </div>
       </div>
       <div style="text-align:right;margin-top:12px">
@@ -3944,20 +3962,29 @@ function renderBuildings(){
   try{ prmsRaw = JSON.parse(localStorage.getItem('avi_params_v2')||'null') }catch(e){}
   var bprms = prmsRaw && prmsRaw.batiments ? prmsRaw.batiments : {}
   const bats=[
-    {name:'Bâtiment A', lot:(bprms.a&&bprms.a.lot)||'—', count:BAT_INFO.a.effectif||0, rate:S.rateA, prev:S.prevRateA, alert:false, active:BAT_INFO.a.effectif>0},
-    {name:'Bâtiment B', lot:(bprms.b&&bprms.b.lot)||'—', count:BAT_INFO.b.effectif||0, rate:S.rateB, prev:S.prevRateB, alert:false, active:BAT_INFO.b.effectif>0},
-    {name:'Bâtiment C', lot:(bprms.c&&bprms.c.lot)||'—', count:BAT_INFO.c.effectif||0, rate:S.rateC, prev:S.prevRateC, alert:false, active:BAT_INFO.c.effectif>0},
+    {name:'Bâtiment A', lot:(bprms.a&&bprms.a.lot)||'—', count:BAT_INFO.a.effectif||0, rate:S.rateA, prev:S.prevRateA, alert:false, active:BAT_INFO.a.effectif>0, statut:BAT_INFO.a.statut||'ponte'},
+    {name:'Bâtiment B', lot:(bprms.b&&bprms.b.lot)||'—', count:BAT_INFO.b.effectif||0, rate:S.rateB, prev:S.prevRateB, alert:false, active:BAT_INFO.b.effectif>0, statut:BAT_INFO.b.statut||'ponte'},
+    {name:'Bâtiment C', lot:(bprms.c&&bprms.c.lot)||'—', count:BAT_INFO.c.effectif||0, rate:S.rateC, prev:S.prevRateC, alert:false, active:BAT_INFO.c.effectif>0, statut:BAT_INFO.c.statut||'ponte'},
   ]
   grid.innerHTML=bats.map(b=>{
     if(!b.active) return `<div class="bat-card" style="opacity:.5"><div class="bat-name">${b.name}</div><div class="bat-sub">Vide — désinfection</div><div style="font-size:20px;margin:6px 0;color:var(--gray-300)">—</div><div class="bat-stats"><span>Capacité: 8 500</span></div></div>`
-    const cls=b.rate>=82?'rok':b.rate>=78?'rwarn':'rbad'
-    const badge=b.alert?'<span class="badge b-red">⚠ Alerte</span>':'<span class="badge b-green">Normal</span>'
+    const enCroissance=b.statut==='croissance'
+    const statutBadge=enCroissance?'<span class="badge b-blue">🐣 Croissance</span>':(b.alert?'<span class="badge b-red">⚠ Alerte</span>':'<span class="badge b-green">🥚 En ponte</span>')
     const card=b.alert?'bat-card bat-alert':'bat-card'
+    if(enCroissance){
+      return `<div class="${card}" onclick="goPage('production',document.querySelector('.nav-item:nth-child(2)'))">
+        <div style="display:flex;justify-content:space-between;align-items:center">${statutBadge}</div>
+        <div class="bat-name" style="margin-top:6px">${b.name}</div>
+        <div class="bat-sub">${esc(b.lot)} · ${b.count.toLocaleString('fr-FR')} poules ${b.extra||''}</div>
+        <div style="font-size:13px;color:var(--gray-400);margin:8px 0">En croissance — pas encore en ponte</div>
+      </div>`
+    }
+    const cls=b.rate>=82?'rok':b.rate>=78?'rwarn':'rbad'
     const diff=S.n>0?(b.rate-b.prev).toFixed(1):null
     const varHtml=diff!=null?`<span style="color:${parseFloat(diff)>=0?'#059669':'#DC2626'}">${parseFloat(diff)>=0?'▲ +':'▼ '}${Math.abs(parseFloat(diff)).toFixed(1)}%</span>`:'—'
     const eggs=Math.round(b.rate/100*b.count)
     return `<div class="${card}" onclick="goPage('production',document.querySelector('.nav-item:nth-child(2)'))">
-      <div style="display:flex;justify-content:space-between;align-items:center">${badge}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">${statutBadge}</div>
       <div class="bat-name" style="margin-top:6px">${b.name}</div>
       <div class="bat-sub">${esc(b.lot)} · ${b.count.toLocaleString('fr-FR')} poules ${b.extra||''}</div>
       <div class="bat-rate ${cls}">${b.rate.toFixed(1)}%</div>
@@ -5224,9 +5251,9 @@ var BAT_INFO = (function(){
   try{ prms = JSON.parse(localStorage.getItem('avi_params_v2')||'null') }catch(e){}
   var bats = prms && prms.batiments ? prms.batiments : {}
   return {
-    a: { label:'Bâtiment A', effectif:(bats.a&&bats.a.effectif)||8190, moy7j:0, withdrawal:false, objectif:(bats.a&&bats.a.objectif)||82 },
-    b: { label:'Bâtiment B', effectif:(bats.b&&bats.b.effectif)||8370, moy7j:0, withdrawal:false, objectif:(bats.b&&bats.b.objectif)||82 },
-    c: { label:'Bâtiment C', effectif:(bats.c&&bats.c.effectif)||8190, moy7j:0, withdrawal:false, objectif:(bats.c&&bats.c.objectif)||82 }
+    a: { label:'Bâtiment A', effectif:(bats.a&&bats.a.effectif)||8190, moy7j:0, withdrawal:false, objectif:(bats.a&&bats.a.objectif)||82, statut:(bats.a&&bats.a.statut)||'ponte' },
+    b: { label:'Bâtiment B', effectif:(bats.b&&bats.b.effectif)||8370, moy7j:0, withdrawal:false, objectif:(bats.b&&bats.b.objectif)||82, statut:(bats.b&&bats.b.statut)||'ponte' },
+    c: { label:'Bâtiment C', effectif:(bats.c&&bats.c.effectif)||8190, moy7j:0, withdrawal:false, objectif:(bats.c&&bats.c.objectif)||82, statut:(bats.c&&bats.c.statut)||'ponte' }
   }
 })()
 
@@ -6103,11 +6130,13 @@ function sauvegarderParametres(){
         prev = prev || {}
         var lot = val(prefix+'-lot'), race = val(prefix+'-race')
         var eff = val(prefix+'-eff'), obj = val(prefix+'-obj')
+        var statut = val(prefix+'-statut')
         return {
           lot:      lot  !== '' ? lot            : (prev.lot||''),
           race:     race !== '' ? race           : (prev.race||''),
           effectif: eff  !== '' ? parseInt(eff)  : (prev.effectif||0),
-          objectif: obj  !== '' ? parseInt(obj)  : (prev.objectif||82)
+          objectif: obj  !== '' ? parseInt(obj)  : (prev.objectif||82),
+          statut:   statut !== '' ? statut       : (prev.statut||'ponte')
         }
       }
       return {
@@ -6145,6 +6174,7 @@ function sauvegarderParametres(){
         if(!b) return
         BAT_INFO[k].effectif = b.effectif||0
         BAT_INFO[k].objectif = b.objectif||82
+        BAT_INFO[k].statut = b.statut||'ponte'
       })
     }
     if(typeof initDashboard==='function') initDashboard()
@@ -6187,6 +6217,7 @@ function chargerParametres(){
     setVal('bat-'+k+'-race', b.race)
     setVal('bat-'+k+'-eff',  b.effectif)
     setVal('bat-'+k+'-obj',  b.objectif)
+    setVal('bat-'+k+'-statut', b.statut||'ponte')
   })
 
   if(params.couleur){
@@ -6566,8 +6597,12 @@ function rafraichirProduction(){
     var couleurs = { A:'#60A5FA', B:'#4ADE80', C:'#FBBF24' }
     wrap.innerHTML = ['A','B','C'].map(function(h){
       var d = hangars[h]
+      var statutBat = (typeof BAT_INFO!=='undefined' && BAT_INFO[h.toLowerCase()] && BAT_INFO[h.toLowerCase()].statut) || 'ponte'
+      var statutBadgeHtml = statutBat==='croissance'
+        ? '<span class="badge b-blue" style="margin-left:6px">🐣 Croissance</span>'
+        : '<span class="badge b-green" style="margin-left:6px">🥚 En ponte</span>'
       return '<div class="card">'
-        +'<div class="sec-title" style="color:'+couleurs[h]+'">🏠 Bâtiment '+h+'</div>'
+        +'<div class="sec-title" style="color:'+couleurs[h]+';display:flex;align-items:center">🏠 Bâtiment '+h+statutBadgeHtml+'</div>'
         +'<div style="padding:10px;background:var(--gray-50);border-radius:9px;text-align:center;margin-bottom:10px">'
         +'<div style="font-size:10px;color:var(--gray-500);font-weight:700;text-transform:uppercase">🐔 Nombre de poules</div>'
         +'<div style="font-size:20px;font-weight:800;color:'+couleurs[h]+'">'+d.poules.toLocaleString('fr-FR')+'</div>'
