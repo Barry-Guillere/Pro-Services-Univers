@@ -4259,7 +4259,7 @@ function restaurerDonnees(){
     // Finance
     if(typeof FIN !== 'undefined' && data.FIN_operations){
       FIN.operations = data.FIN_operations
-      FIN.soldes     = data.FIN_soldes || {caisse:0,banque:0,mobile:0}
+      recalculerSoldes()
     }
     // Logistique
     if(typeof LOG !== 'undefined'){
@@ -4541,9 +4541,9 @@ function pullFromSupabase(applyIfNewer, cb){
     var [finOps, finSoldes, stkQte, stkMvts, clients, factures, pdv, voyages, recus, pannes, sante, logCfg, params] = results
 
     if(typeof FIN!=='undefined'){
-      var finOpsRemote = finOps.map(function(o){ return {id:o.id, date:o.date, type:o.type, cat:o.categorie, desc:o.description, compte:o.compte, montant:o.montant, resp:o.responsable} })
+      var finOpsRemote = finOps.map(function(o){ return {id:o.id, date:o.date, type:o.type, cat:o.categorie, desc:o.description, compte:o.compte, montant:parseFloat(o.montant)||0, resp:o.responsable} })
       FIN.operations = _fusionnerParId(FIN.operations, finOpsRemote)
-      FIN.soldes = {}; finSoldes.forEach(function(s){ FIN.soldes[s.compte] = s.montant })
+      recalculerSoldes()
     }
     if(typeof STOCK_QTE!=='undefined'){
       STOCK_QTE = {}; stkQte.forEach(function(s){ STOCK_QTE[s.produit_id] = {qte:s.quantite, prix_moyen:s.prix_moyen} })
@@ -5416,7 +5416,6 @@ function enregistrerEvenementSante(){
 
   // ── Connexion automatique vers Finance : coût du traitement ──
   if(evt.cout > 0 && typeof FIN !== 'undefined'){
-    FIN.soldes.caisse = (FIN.soldes.caisse||0) - evt.cout
     FIN.operations.unshift({
       id: Date.now()+1,
       date: evt.date,
@@ -5427,6 +5426,7 @@ function enregistrerEvenementSante(){
       montant: evt.cout,
       resp: currentUser ? (currentUser.name||'') : 'Admin'
     })
+    recalculerSoldes()
     try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
   }
 
@@ -6318,7 +6318,6 @@ function enregistrerCarburant(){
 
     // ── Connexion automatique vers Finance : coût du carburant ──
     if(montant > 0 && typeof FIN !== 'undefined'){
-      FIN.soldes.caisse = (FIN.soldes.caisse||0) - montant
       FIN.operations.unshift({
         id: Date.now()+1,
         date: date,
@@ -6329,6 +6328,7 @@ function enregistrerCarburant(){
         montant: montant,
         resp: currentUser ? (currentUser.name||'') : 'Admin'
       })
+      recalculerSoldes()
       try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
     }
 
@@ -6598,6 +6598,20 @@ var FIN = {
   operations: []   // {id,date,type:'recette'|'depense',cat,desc,compte,montant,resp}
 }
 
+// Les soldes sont toujours recalcules depuis les operations (seule source
+// fiable, fusionnee correctement entre appareils) plutot que lus depuis un
+// cache separe — un cache par compte se faisait ecraser silencieusement
+// par le dernier appareil synchronise, desynchronisant la tresorerie des
+// operations reellement enregistrees.
+function recalculerSoldes(){
+  var s = {}
+  FIN.operations.forEach(function(o){
+    var m = o.montant||0
+    s[o.compte] = (s[o.compte]||0) + (o.type==='recette' ? m : -m)
+  })
+  FIN.soldes = s
+}
+
 function calcTotalFin(prefix){
   var montant = parseFloat(document.getElementById(prefix+'-montant').value) || 0
   var el = document.getElementById(prefix+'-total-preview')
@@ -6622,7 +6636,19 @@ function ouvrirModalCompte(){
   var nom = prompt('Nom du compte à ajouter (ex: Compte Ecobank) :')
   if(!nom) return
   var solde = parseFloat(prompt('Solde de départ (GNF) :', '0')) || 0
-  FIN.soldes[nom] = solde
+  if(solde !== 0){
+    FIN.operations.unshift({
+      id: Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      type: 'recette',
+      cat: 'ouverture',
+      desc: 'Solde de départ — '+nom,
+      compte: nom,
+      montant: solde,
+      resp: currentUser ? (currentUser.name||'') : 'Admin'
+    })
+  }
+  recalculerSoldes()
   rafraichirFinance()
   try{ autosave() }catch(e){}
 }
@@ -6632,7 +6658,6 @@ function enregistrerRecette(){
   var montant = parseFloat(document.getElementById('rec-montant').value) || 0
   if(!desc || montant<=0){ alert('Renseigne une description et un montant valide.'); return }
   var compte = document.getElementById('rec-compte').value
-  FIN.soldes[compte] = (FIN.soldes[compte]||0) + montant
   FIN.operations.unshift({
     id: Date.now(),
     date: document.getElementById('rec-date').value,
@@ -6643,6 +6668,7 @@ function enregistrerRecette(){
     montant: montant,
     resp: currentUser ? (currentUser.name||'') : 'Admin'
   })
+  recalculerSoldes()
   document.getElementById('modal-recette').classList.remove('open')
   rafraichirFinance()
   try{ autosave() }catch(e){}
@@ -6653,7 +6679,6 @@ function enregistrerDepense(){
   var montant = parseFloat(document.getElementById('dep-montant').value) || 0
   if(!desc || montant<=0){ alert('Renseigne une description et un montant valide.'); return }
   var compte = document.getElementById('dep-compte').value
-  FIN.soldes[compte] = (FIN.soldes[compte]||0) - montant
   FIN.operations.unshift({
     id: Date.now(),
     date: document.getElementById('dep-date').value,
@@ -6664,6 +6689,7 @@ function enregistrerDepense(){
     montant: montant,
     resp: currentUser ? (currentUser.name||'') : 'Admin'
   })
+  recalculerSoldes()
   document.getElementById('modal-depense').classList.remove('open')
   rafraichirFinance()
   try{ autosave() }catch(e){}
@@ -6832,7 +6858,6 @@ function enregistrerVoyage(){
 
   // ── Connexion automatique vers Finance : coût du voyage ──
   if(voyage.cout > 0 && typeof FIN !== 'undefined'){
-    FIN.soldes.caisse = (FIN.soldes.caisse||0) - voyage.cout
     FIN.operations.unshift({
       id: Date.now()+1,
       date: voyage.date,
@@ -6843,6 +6868,7 @@ function enregistrerVoyage(){
       montant: voyage.cout,
       resp: currentUser ? (currentUser.name||'') : 'Admin'
     })
+    recalculerSoldes()
     try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
   }
 
@@ -6870,7 +6896,6 @@ function enregistrerPanne(){
 
   // ── Connexion automatique vers Finance : coût de la réparation ──
   if(panne.cout > 0 && typeof FIN !== 'undefined'){
-    FIN.soldes.caisse = (FIN.soldes.caisse||0) - panne.cout
     FIN.operations.unshift({
       id: Date.now()+1,
       date: panne.date,
@@ -6881,6 +6906,7 @@ function enregistrerPanne(){
       montant: panne.cout,
       resp: currentUser ? (currentUser.name||'') : 'Admin'
     })
+    recalculerSoldes()
     try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
   }
 
@@ -7089,7 +7115,6 @@ function enregistrerEntreeStock(){
   // ── Connexion automatique vers Finance : achat de stock ──
   var montantAchat = Math.round(qte*prix)
   if(montantAchat > 0 && typeof FIN !== 'undefined'){
-    FIN.soldes.caisse = (FIN.soldes.caisse||0) - montantAchat
     FIN.operations.unshift({
       id: Date.now()+1,
       date: document.getElementById('stk-in-date').value,
@@ -7100,6 +7125,7 @@ function enregistrerEntreeStock(){
       montant: montantAchat,
       resp: currentUser ? (currentUser.name||'') : 'Admin'
     })
+    recalculerSoldes()
     try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
   }
 
@@ -7148,7 +7174,6 @@ function enregistrerSortieStock(){
   var prixVente = parseFloat((document.getElementById('stk-out-prixvente')||{value:0}).value) || 0
   var montantVente = Math.round(qte*prixVente)
   if(motifSortie==='vente' && montantVente>0 && typeof FIN!=='undefined'){
-    FIN.soldes.caisse = (FIN.soldes.caisse||0) + montantVente
     FIN.operations.unshift({
       id: Date.now()+1,
       date: document.getElementById('stk-out-date').value,
@@ -7159,6 +7184,7 @@ function enregistrerSortieStock(){
       montant: montantVente,
       resp: currentUser?(currentUser.name||''):'Admin'
     })
+    recalculerSoldes()
     try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
   }
 
@@ -7779,7 +7805,6 @@ function enregistrerFactureCommerce(imprimer){
   var montantRecu = total - solde  // = acompte si partiel, = total si payée intégralement
   if(montantRecu > 0 && typeof FIN !== 'undefined'){
     var compteRecu = (facture.paiement==='wave'||facture.paiement==='orange') ? 'mobile' : facture.paiement==='virement' ? 'banque' : 'caisse'
-    FIN.soldes[compteRecu] = (FIN.soldes[compteRecu]||0) + montantRecu
     FIN.operations.unshift({
       id: Date.now(),
       date: facture.date,
@@ -7790,6 +7815,7 @@ function enregistrerFactureCommerce(imprimer){
       montant: montantRecu,
       resp: currentUser ? (currentUser.name||'') : 'Admin'
     })
+    recalculerSoldes()
     try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
   }
 
@@ -7988,7 +8014,6 @@ function marquerPayee(id){
 
   // ── Connexion automatique vers Finance : encaissement d'une créance ──
   if(typeof FIN !== 'undefined'){
-    FIN.soldes.caisse = (FIN.soldes.caisse||0) + paiement
     FIN.operations.unshift({
       id: Date.now(),
       date: new Date().toISOString().split('T')[0],
@@ -7999,6 +8024,7 @@ function marquerPayee(id){
       montant: paiement,
       resp: currentUser ? (currentUser.name||'') : 'Admin'
     })
+    recalculerSoldes()
     try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
   }
 
