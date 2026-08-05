@@ -41,6 +41,7 @@ const TABLES_AUTORISEES = new Set([
   "sante_evenements",
   "logistique_config",
   "parametres",
+  "production_pontes",
 ]);
 
 const CORS_HEADERS = {

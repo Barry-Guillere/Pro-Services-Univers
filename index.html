@@ -4470,6 +4470,9 @@ function syncToSupabase(data){
   var santeEvts = (data.SANTE_EVENTS||[]).map(function(e){
     return {id:e.id, date:e.date||'', type:e.type||'', gravite:e.gravite||'', description:e.desc||'', batiment:e.bloc||'', responsable:e.resp||''}
   })
+  var pontes = (data.PONTES_HISTORIQUE||[]).map(function(p){
+    return {id:p.date+'_'+p.bat, date:p.date||'', bat:p.bat||'', taux:p.taux||0, march:p.march||0, total:p.total||0, feles:p.feles||0, sales:p.sales||0, morts:p.morts||0, alim:p.alim||0, eau:p.eau||0}
+  })
 
   Promise.all([
     _cloudUpsert(token,'finance_operations',financeOps),
@@ -4483,6 +4486,7 @@ function syncToSupabase(data){
     _cloudUpsert(token,'logistique_recus',recus),
     _cloudUpsert(token,'logistique_pannes',pannes),
     _cloudUpsert(token,'sante_evenements',santeEvts),
+    _cloudUpsert(token,'production_pontes',pontes,'id'),
     _cloudUpsert(token,'logistique_config',[{id:'principal',km_actuel:data.LOG_kmActuel||0,voyages_total:data.LOG_voyTotal||0,voyages_depuis_vidange:data.LOG_voyDepuis||0,seuil_vidange:data.LOG_seuil||50,date_derniere_vidange:data.LOG_dateVidange}],'id'),
     _cloudUpsert(token,'parametres',[{id:'principal',data:JSON.parse(localStorage.getItem('avi_params_v2')||'{}')}],'id')
   ]).then(function(){
@@ -4507,6 +4511,17 @@ function _idVersHorodatage(id){
   if(id===undefined || id===null) return 0
   var m = String(id).match(/(\d{10,})/)
   return m ? parseInt(m[1]) : 0
+}
+
+// ── Fusion dédiée aux relevés de ponte (une valeur par date+bâtiment,
+//    pas un identifiant horodaté) : on garde tout ce qui vient du serveur,
+//    plus les entrées locales dont le couple date+bâtiment n'y figure pas
+//    encore (saisie pas encore envoyée) ──
+function _fusionnerPontes(local, remote){
+  var vusCombo = {}
+  remote.forEach(function(r){ if(r) vusCombo[r.date+'_'+r.bat] = true })
+  var localNonEnvoyes = (local||[]).filter(function(l){ return l && !vusCombo[l.date+'_'+l.bat] })
+  return remote.concat(localNonEnvoyes)
 }
 
 function _fusionnerParId(local, remote){
@@ -4536,9 +4551,9 @@ function pullFromSupabase(applyIfNewer, cb){
     _cloudFetch(token,'points_de_vente'), _cloudFetch(token,'logistique_voyages'),
     _cloudFetch(token,'logistique_recus'), _cloudFetch(token,'logistique_pannes'),
     _cloudFetch(token,'sante_evenements'), _cloudFetch(token,'logistique_config'),
-    _cloudFetch(token,'parametres')
+    _cloudFetch(token,'parametres'), _cloudFetch(token,'production_pontes')
   ]).then(function(results){
-    var [finOps, finSoldes, stkQte, stkMvts, clients, factures, pdv, voyages, recus, pannes, sante, logCfg, params] = results
+    var [finOps, finSoldes, stkQte, stkMvts, clients, factures, pdv, voyages, recus, pannes, sante, logCfg, params, pontes] = results
 
     if(typeof FIN!=='undefined'){
       var finOpsRemote = finOps.map(function(o){ return {id:o.id, date:o.date, type:o.type, cat:o.categorie, desc:o.description, compte:o.compte, montant:parseFloat(o.montant)||0, resp:o.responsable} })
@@ -4583,6 +4598,17 @@ function pullFromSupabase(applyIfNewer, cb){
     }
     if(params && params[0] && params[0].data){
       try{ localStorage.setItem('avi_params_v2', JSON.stringify(params[0].data)) }catch(e){}
+    }
+    if(typeof PONTES_HISTORIQUE!=='undefined'){
+      var pontesRemote = (pontes||[]).map(function(p){ return {date:p.date, bat:p.bat, taux:parseFloat(p.taux)||0, march:parseInt(p.march)||0, total:parseInt(p.total)||0, feles:parseInt(p.feles)||0, sales:parseInt(p.sales)||0, morts:parseInt(p.morts)||0, alim:parseFloat(p.alim)||0, eau:parseFloat(p.eau)||0} })
+      PONTES_HISTORIQUE = _fusionnerPontes(PONTES_HISTORIQUE, pontesRemote)
+      if(typeof PONTES_SESSION!=='undefined'){
+        var todayStrPonte = new Date().toISOString().split('T')[0]
+        ;['a','b','c'].forEach(function(bat){
+          var entreeDuJour = PONTES_HISTORIQUE.find(function(p){ return p.bat===bat && p.date===todayStrPonte })
+          if(entreeDuJour) PONTES_SESSION[bat] = { taux:entreeDuJour.taux, march:entreeDuJour.march, total:entreeDuJour.total, feles:entreeDuJour.feles, sales:entreeDuJour.sales, morts:entreeDuJour.morts, alim:entreeDuJour.alim, eau:entreeDuJour.eau, date:entreeDuJour.date }
+        })
+      }
     }
 
     if(applyIfNewer){
