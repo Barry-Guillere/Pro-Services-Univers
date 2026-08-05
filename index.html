@@ -5857,8 +5857,6 @@ function validerToutesPontes(){
     return
   }
 
-  // Mettre à jour le tableau des lots dans la page aviculture
-  mettreAJourTableauLots(resultats)
   // Recalculer les moyennes 7j depuis l'historique
   ;['a','b','c'].forEach(function(bat){
     var cutoff = new Date(); cutoff.setDate(cutoff.getDate()-7); var cutStr = cutoff.toISOString().split('T')[0]
@@ -5883,27 +5881,6 @@ function validerToutesPontes(){
     // Fermer le modal apres 1.5s
   setTimeout(()=> fermerSaisiePonte(), 1600)
   setTimeout(autosave, 1700)
-}
-
-function mettreAJourTableauLots(resultats){
-  const table = document.querySelector('#page-aviculture tbody')
-  if(!table) return
-
-  const LOTS = { a:'LOT-2024-001', b:'LOT-2024-002', c:'LOT-2024-003' }
-  const rows = table.querySelectorAll('tr')
-
-  resultats.forEach(r=>{
-    rows.forEach(row=>{
-      const lot = row.querySelector('td:first-child strong')
-      if(lot && lot.textContent === LOTS[r.bat]){
-        const tauxCell = row.querySelectorAll('td')[5]
-        if(tauxCell){
-          const color = r.taux>=82?'#059669':r.taux>=75?'#FBBF24':'#F87171'
-          tauxCell.innerHTML = '<span style="color:'+color+';font-weight:700">'+r.taux.toFixed(1)+'%</span>'
-        }
-      }
-    })
-  })
 }
 
 function mettreAJourDashboardDepuisPonte(resultats){
