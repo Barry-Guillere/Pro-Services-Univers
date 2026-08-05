@@ -1024,9 +1024,9 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
           </select>
         </div>
         <div class="form-field" id="stk-out-prixvente-wrap" style="display:none">
-          <label>Prix de vente unitaire (GNF)</label>
+          <label>Prix de vente unitaire (GNF) *</label>
           <input type="number" id="stk-out-prixvente" placeholder="ex: 250" min="0">
-          <div style="font-size:10.5px;color:var(--gray-500);margin-top:3px">Différent du prix d'achat utilisé pour la valorisation du stock</div>
+          <div style="font-size:10.5px;color:var(--gray-500);margin-top:3px">Obligatoire pour que la vente soit comptabilisée en Finance (CA). Différent du prix d'achat utilisé pour la valorisation du stock.</div>
         </div>
       </div>
     </div>
@@ -7146,6 +7146,10 @@ function enregistrerSortieStock(){
   var qte    = parseFloat(document.getElementById('stk-out-qte').value)||0
   if(!prodId){ alert('Sélectionnez un produit.'); return }
   if(qte<=0){ alert('Quantité obligatoire.'); return }
+  if((document.getElementById('stk-out-motif')||{value:''}).value==='vente'){
+    var prixVenteCheck = parseFloat((document.getElementById('stk-out-prixvente')||{value:0}).value) || 0
+    if(prixVenteCheck<=0 && !confirm('Aucun prix de vente renseigné : cette sortie ne sera PAS comptabilisée dans les recettes (CA/Finance).\n\nContinuer quand même sans enregistrer de recette ?')) return
+  }
 
   var curr = STOCK_QTE[prodId] || {qte:0,prix_moyen:0}
   if(qte > curr.qte){ alert('Stock insuffisant !\nDisponible : '+curr.qte.toLocaleString('fr-FR')); return }
