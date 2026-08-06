@@ -761,6 +761,31 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
   </div>
 </div>
 
+<!-- ══ MODAL PAIEMENT FACTURE ══ -->
+<div class="modal-overlay" id="modal-paiement-facture" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-head">
+      <h2 id="pf-titre">💰 Enregistrer un paiement</h2>
+      <button class="modal-close" onclick="document.getElementById('modal-paiement-facture').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="pf-facture-id">
+      <div class="form-field"><label>Montant reçu (GNF) *</label><input type="number" id="pf-montant" min="0"></div>
+      <div class="form-field"><label>Compte crédité *</label>
+        <select id="pf-compte">
+          <option value="caisse">💵 Caisse</option>
+          <option value="banque">🏦 Banque</option>
+          <option value="mobile">📱 Mobile Money (Wave/Orange)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-d" onclick="document.getElementById('modal-paiement-facture').classList.remove('open')">Annuler</button>
+      <button class="btn btn-p" onclick="enregistrerPaiementFacture()">✅ Enregistrer le paiement</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL BON DE COMMANDE ══ -->
 <div class="modal-overlay" id="modal-bdc" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal-box" style="max-width:580px">
@@ -8008,11 +8033,24 @@ function changerStatutBDC(id, statut){
 }
 
 // ── Marquer facture payée ─────────────────────────────────────
-function marquerPayee(id){
+function ouvrirModalPaiementFacture(id){
   var f = COMMERCE.factures.find(function(x){return x.id===id})
   if(!f) return
-  var paiement = parseFloat(prompt('Montant reçu (GNF) :', f.solde))||0
-  if(paiement<=0) return
+  document.getElementById('pf-titre').textContent = '💰 Paiement — Facture '+f.num
+  document.getElementById('pf-facture-id').value = id
+  document.getElementById('pf-montant').value = f.solde
+  document.getElementById('pf-compte').value = 'caisse'
+  document.getElementById('modal-paiement-facture').classList.add('open')
+}
+
+function enregistrerPaiementFacture(){
+  var id = document.getElementById('pf-facture-id').value
+  var f = COMMERCE.factures.find(function(x){return x.id===id})
+  if(!f) return
+  var paiement = parseFloat(document.getElementById('pf-montant').value)||0
+  if(paiement<=0){ alert('Montant invalide.'); return }
+  var compte = document.getElementById('pf-compte').value
+
   f.acompte = (f.acompte||0) + paiement
   f.solde   = f.total - f.acompte
   f.statut  = f.solde<=0?'payee':'partiel'
@@ -8027,7 +8065,7 @@ function marquerPayee(id){
       type: 'recette',
       cat: 'remboursement',
       desc: 'Encaissement facture '+f.num+' — '+f.clientNom,
-      compte: 'caisse',
+      compte: compte,
       montant: paiement,
       resp: currentUser ? (currentUser.name||'') : 'Admin'
     })
@@ -8035,6 +8073,7 @@ function marquerPayee(id){
     try{ if(typeof rafraichirFinance==='function') rafraichirFinance() }catch(e){}
   }
 
+  document.getElementById('modal-paiement-facture').classList.remove('open')
   rafraichirCommerce()
   setTimeout(autosave,100)
 }
@@ -8233,7 +8272,7 @@ function rafraichirCommerce(){
           +'<td><span class="badge '+(statCols[f.statut]||'b-gray')+'" style="font-size:10px">'+(statLbls[f.statut]||f.statut)+'</span></td>'
           +'<td style="display:flex;gap:4px">'
           +'<button class="btn btn-d btn-sm" data-id="'+f.id+'" onclick="printFactById(this.dataset.id)" style="font-size:11px">&#128424;</button>'
-          +(f.statut!=='payee'?'<button class="btn btn-p btn-sm" data-id="'+f.id+'" onclick="marquerPayee(this.dataset.id)" style="font-size:11px">&#128176;</button>':'')
+          +(f.statut!=='payee'?'<button class="btn btn-p btn-sm" data-id="'+f.id+'" onclick="ouvrirModalPaiementFacture(this.dataset.id)" style="font-size:11px">&#128176;</button>':'')
           +'</td>'
           +'</tr>'
       }).join('')
