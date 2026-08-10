@@ -510,6 +510,7 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-d btn-sm" onclick="ouvrirSaisiePonte()">🥚 Saisie détaillée de ponte</button>
+      <button class="btn btn-d btn-sm" onclick="ouvrirModalProductionBarquettes()">📦 Production barquettes</button>
       <button class="btn btn-s btn-sm" onclick="exporterProductionCSV()">📥 CSV</button>
       <button class="btn btn-s btn-sm" onclick="exporterProductionPDF()">📄 PDF</button>
     </div>
@@ -525,7 +526,24 @@ select.mf-select:focus,textarea.mf-input:focus{border-color:var(--brand)}
   </div>
 </div>
 
-
+<!-- ══ MODAL PRODUCTION BARQUETTES ══ -->
+<div class="modal-overlay" id="modal-production-barquettes" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-head">
+      <h2>📦 Production de barquettes</h2>
+      <button class="modal-close" onclick="document.getElementById('modal-production-barquettes').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field"><label>Date de production *</label><input type="date" id="pb-date"></div>
+      <div class="form-field"><label>Quantité produite (paquets) *</label><input type="number" id="pb-qte" min="1" placeholder="ex: 50"></div>
+      <div class="success-msg" id="pb-success" style="margin-top:10px">✅ Production de barquettes enregistrée !</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-d" onclick="document.getElementById('modal-production-barquettes').classList.remove('open')">Annuler</button>
+      <button class="btn btn-p" onclick="enregistrerProductionBarquettes()">✅ Enregistrer</button>
+    </div>
+  </div>
+</div>
 
    <!-- ═══ COMMERCE ═══ -->
    <div class="page" id="page-commerce">
@@ -7131,6 +7149,43 @@ function validerSection(section){
     btn.textContent = '✅ Enregistré'
     setTimeout(function(){ btn.textContent = texteOriginal }, 1500)
   }
+}
+
+// ── Production de barquettes → crédite directement le Stock ──
+function ouvrirModalProductionBarquettes(){
+  document.getElementById('pb-date').value = new Date().toISOString().split('T')[0]
+  document.getElementById('pb-qte').value = ''
+  document.getElementById('modal-production-barquettes').classList.add('open')
+}
+
+function enregistrerProductionBarquettes(){
+  var date = document.getElementById('pb-date').value
+  var qte  = parseInt(document.getElementById('pb-qte').value) || 0
+  if(!date){ alert('Date obligatoire.'); return }
+  if(qte<=0){ alert('Quantité obligatoire.'); return }
+
+  var curr = STOCK_QTE['barquettes'] || {qte:0, prix_moyen:0}
+  STOCK_QTE['barquettes'] = { qte: curr.qte + qte, prix_moyen: curr.prix_moyen }
+
+  STOCK_MOUVEMENTS.unshift({
+    id: Date.now(),
+    date: date,
+    prodId: 'barquettes',
+    prodNom: 'Barquettes',
+    type: 'entree',
+    qte: qte,
+    unite: 'paquet',
+    prix: 0,
+    total: 0,
+    motif: 'Production barquettes',
+    resp: currentUser?(currentUser.name||''):'Admin'
+  })
+
+  var msg = document.getElementById('pb-success')
+  if(msg){ msg.style.display='block'; setTimeout(function(){ msg.style.display='none' },2000) }
+  setTimeout(function(){ document.getElementById('modal-production-barquettes').classList.remove('open') }, 700)
+  rafraichirStock()
+  setTimeout(autosave, 100)
 }
 
 // ── Enregistrer une entrée ────────────────────────────────
