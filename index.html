@@ -5864,10 +5864,36 @@ function validerToutesPontes(){
 
     // Stocker dans l'historique permanent (dédoublonnage par date+bat)
     var existIdx = PONTES_HISTORIQUE.findIndex(function(p){ return p.date===dateVal && p.bat===bat })
+    var totalPrecedent = existIdx>=0 ? (PONTES_HISTORIQUE[existIdx].total||0) : 0
     var entryH = { date:dateVal, bat:bat, taux:taux, march:march, total:total, feles:feles, sales:sales, morts:morts, alim:alim, eau:eau }
     if(existIdx >= 0) PONTES_HISTORIQUE[existIdx] = entryH
     else PONTES_HISTORIQUE.unshift(entryH)
     if(PONTES_HISTORIQUE.length > 1095) PONTES_HISTORIQUE = PONTES_HISTORIQUE.slice(0, 1095)
+
+    // ── Connexion automatique vers Stock : créditer les alvéoles produites ──
+    // (ne crédite que la différence si cette date+bâtiment avait déjà été saisie,
+    // pour ne pas dupliquer le stock en cas de correction)
+    var deltaAlveoles = total - totalPrecedent
+    if(deltaAlveoles !== 0 && typeof STOCK_QTE!=='undefined'){
+      var prodIdOeuf = 'oeuf_bloc_'+bat
+      var currOeuf = STOCK_QTE[prodIdOeuf] || {qte:0, prix_moyen:0}
+      STOCK_QTE[prodIdOeuf] = { qte: Math.max(0, currOeuf.qte + deltaAlveoles), prix_moyen: currOeuf.prix_moyen }
+      if(typeof STOCK_MOUVEMENTS!=='undefined'){
+        STOCK_MOUVEMENTS.unshift({
+          id: Date.now()+Math.floor(Math.random()*1000),
+          date: dateVal,
+          prodId: prodIdOeuf,
+          prodNom: 'Œufs — Bâtiment '+bat.toUpperCase(),
+          type: deltaAlveoles>0 ? 'entree' : 'sortie',
+          qte: Math.abs(deltaAlveoles),
+          unite: 'alvéole',
+          prix: 0,
+          total: 0,
+          motif: 'Production journalière (ponte)',
+          resp: currentUser?(currentUser.name||''):'Admin'
+        })
+      }
+    }
 
     // Détecter alertes chute
     if(ecart < -5 && bat!=='b'){
