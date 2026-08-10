@@ -4328,8 +4328,8 @@ function restaurerDonnees(){
     if(typeof VACCINATIONS   !== 'undefined' && data.VACCINATIONS)   VACCINATIONS   = data.VACCINATIONS
     if(typeof MORTALITES_LOG !== 'undefined' && data.MORTALITES_LOG) MORTALITES_LOG = data.MORTALITES_LOG
     // Stock
-    if(typeof STOCK_QTE        !== 'undefined' && data.STOCK_QTE)        STOCK_QTE        = data.STOCK_QTE
     if(typeof STOCK_MOUVEMENTS !== 'undefined' && data.STOCK_MOUVEMENTS) STOCK_MOUVEMENTS = data.STOCK_MOUVEMENTS
+    if(typeof recalculerStock==='function') recalculerStock()
     if(typeof COMMERCE !== 'undefined'){
       if(data.COMMERCE_clients)  COMMERCE.clients  = data.COMMERCE_clients
       if(data.COMMERCE_factures) COMMERCE.factures = data.COMMERCE_factures
@@ -4603,12 +4603,10 @@ function pullFromSupabase(applyIfNewer, cb){
       FIN.operations = _fusionnerParId(FIN.operations, finOpsRemote)
       recalculerSoldes()
     }
-    if(typeof STOCK_QTE!=='undefined'){
-      STOCK_QTE = {}; stkQte.forEach(function(s){ STOCK_QTE[s.produit_id] = {qte:s.quantite, prix_moyen:s.prix_moyen} })
-    }
     if(typeof STOCK_MOUVEMENTS!=='undefined'){
-      var stkMvtsRemote = stkMvts.map(function(m){ return {id:m.id, date:m.date, prodId:m.produit_id, prodNom:m.produit_nom, type:m.type, qte:m.quantite, unite:m.unite, prix:m.prix, total:m.total, motif:m.motif, bloc:m.batiment, resp:m.responsable} })
+      var stkMvtsRemote = stkMvts.map(function(m){ return {id:m.id, date:m.date, prodId:m.produit_id, prodNom:m.produit_nom, type:m.type, qte:parseFloat(m.quantite)||0, unite:m.unite, prix:parseFloat(m.prix)||0, total:parseFloat(m.total)||0, motif:m.motif, bloc:m.batiment, resp:m.responsable} })
       STOCK_MOUVEMENTS = _fusionnerParId(STOCK_MOUVEMENTS, stkMvtsRemote)
+      if(typeof recalculerStock==='function') recalculerStock()
     }
     if(typeof COMMERCE!=='undefined'){
       var clientsRemote = clients.map(function(cl){ return {id:cl.id, nom:cl.nom, type:cl.type, tel:cl.telephone, email:cl.email, adresse:cl.adresse, delai:cl.delai_paiement, plafond:cl.plafond_credit, solde:cl.solde} })
@@ -5892,25 +5890,22 @@ function validerToutesPontes(){
     // (ne crédite que la différence si cette date+bâtiment avait déjà été saisie,
     // pour ne pas dupliquer le stock en cas de correction)
     var deltaAlveoles = total - totalPrecedent
-    if(deltaAlveoles !== 0 && typeof STOCK_QTE!=='undefined'){
+    if(deltaAlveoles !== 0 && typeof STOCK_MOUVEMENTS!=='undefined'){
       var prodIdOeuf = 'oeuf_bloc_'+bat
-      var currOeuf = STOCK_QTE[prodIdOeuf] || {qte:0, prix_moyen:0}
-      STOCK_QTE[prodIdOeuf] = { qte: Math.max(0, currOeuf.qte + deltaAlveoles), prix_moyen: currOeuf.prix_moyen }
-      if(typeof STOCK_MOUVEMENTS!=='undefined'){
-        STOCK_MOUVEMENTS.unshift({
-          id: Date.now()+Math.floor(Math.random()*1000),
-          date: dateVal,
-          prodId: prodIdOeuf,
-          prodNom: 'Œufs — Bâtiment '+bat.toUpperCase(),
-          type: deltaAlveoles>0 ? 'entree' : 'sortie',
-          qte: Math.abs(deltaAlveoles),
-          unite: 'alvéole',
-          prix: 0,
-          total: 0,
-          motif: 'Production journalière (ponte)',
-          resp: currentUser?(currentUser.name||''):'Admin'
-        })
-      }
+      STOCK_MOUVEMENTS.unshift({
+        id: Date.now()+Math.floor(Math.random()*1000),
+        date: dateVal,
+        prodId: prodIdOeuf,
+        prodNom: 'Œufs — Bâtiment '+bat.toUpperCase(),
+        type: deltaAlveoles>0 ? 'entree' : 'sortie',
+        qte: Math.abs(deltaAlveoles),
+        unite: 'alvéole',
+        prix: 0,
+        total: 0,
+        motif: 'Production journalière (ponte)',
+        resp: currentUser?(currentUser.name||''):'Admin'
+      })
+      if(typeof recalculerStock==='function') recalculerStock()
     }
 
     // Détecter alertes chute
@@ -6624,6 +6619,30 @@ var STOCK_FILTRE = 'tous'
 // Initialiser les quantités à 0
 STOCK_CATALOGUE.forEach(function(p){ STOCK_QTE[p.id] = { qte:0, prix_moyen:0 } })
 
+// Les quantités sont toujours recalculées depuis les mouvements (seule
+// source fiable, fusionnee correctement entre appareils) plutot que lues
+// depuis un cache separe par produit — meme risque que l'ancien bug de
+// tresorerie : un cache par produit se ferait ecraser silencieusement par
+// le dernier appareil synchronise.
+function recalculerStock(){
+  var stock = {}
+  STOCK_CATALOGUE.forEach(function(p){ stock[p.id] = { qte:0, prix_moyen:0 } })
+  var mvts = STOCK_MOUVEMENTS.slice().sort(function(a,b){ return (a.id||0)-(b.id||0) })
+  mvts.forEach(function(m){
+    var curr = stock[m.prodId] || { qte:0, prix_moyen:0 }
+    if(m.type==='entree'){
+      var newQte = curr.qte + (m.qte||0)
+      var newPrix = newQte>0 && m.prix>0
+        ? Math.round((curr.qte*curr.prix_moyen + (m.qte||0)*m.prix) / newQte)
+        : curr.prix_moyen
+      stock[m.prodId] = { qte:newQte, prix_moyen:newPrix||m.prix||curr.prix_moyen }
+    } else {
+      stock[m.prodId] = { qte: curr.qte - (m.qte||0), prix_moyen: curr.prix_moyen }
+    }
+  })
+  STOCK_QTE = stock
+}
+
 function majUniteStock(sens){
   var selId = 'stk-'+(sens==='in'?'in':'out')+'-produit'
   var uniteId = 'stk-'+(sens==='in'?'in':'out')+'-unite'
@@ -7164,9 +7183,6 @@ function enregistrerProductionBarquettes(){
   if(!date){ alert('Date obligatoire.'); return }
   if(qte<=0){ alert('Quantité obligatoire.'); return }
 
-  var curr = STOCK_QTE['barquettes'] || {qte:0, prix_moyen:0}
-  STOCK_QTE['barquettes'] = { qte: curr.qte + qte, prix_moyen: curr.prix_moyen }
-
   STOCK_MOUVEMENTS.unshift({
     id: Date.now(),
     date: date,
@@ -7180,6 +7196,7 @@ function enregistrerProductionBarquettes(){
     motif: 'Production barquettes',
     resp: currentUser?(currentUser.name||''):'Admin'
   })
+  recalculerStock()
 
   var msg = document.getElementById('pb-success')
   if(msg){ msg.style.display='block'; setTimeout(function(){ msg.style.display='none' },2000) }
@@ -7195,14 +7212,6 @@ function enregistrerEntreeStock(){
   var prix   = parseFloat(document.getElementById('stk-in-prix').value)||0
   if(!prodId){ alert('Sélectionnez un produit.'); return }
   if(qte<=0){ alert('Quantité obligatoire.'); return }
-
-  // Mise à jour CMUP
-  var curr = STOCK_QTE[prodId] || {qte:0,prix_moyen:0}
-  var newQte = curr.qte + qte
-  var newPrix = newQte>0 && prix>0
-    ? Math.round((curr.qte*curr.prix_moyen + qte*prix) / newQte)
-    : curr.prix_moyen
-  STOCK_QTE[prodId] = { qte:newQte, prix_moyen:newPrix||prix }
 
   var prod = STOCK_CATALOGUE.find(function(p){ return p.id===prodId })
   STOCK_MOUVEMENTS.unshift({
@@ -7220,6 +7229,7 @@ function enregistrerEntreeStock(){
     bon:document.getElementById('stk-in-bon').value||'',
     resp:currentUser?(currentUser.name||''):'Admin'
   })
+  recalculerStock()
 
   // ── Connexion automatique vers Finance : achat de stock ──
   var montantAchat = Math.round(qte*prix)
@@ -7259,7 +7269,6 @@ function enregistrerSortieStock(){
 
   var curr = STOCK_QTE[prodId] || {qte:0,prix_moyen:0}
   if(qte > curr.qte){ alert('Stock insuffisant !\nDisponible : '+curr.qte.toLocaleString('fr-FR')); return }
-  STOCK_QTE[prodId] = { qte:curr.qte-qte, prix_moyen:curr.prix_moyen }
 
   var prod = STOCK_CATALOGUE.find(function(p){ return p.id===prodId })
   STOCK_MOUVEMENTS.unshift({
@@ -7276,6 +7285,7 @@ function enregistrerSortieStock(){
     bloc:(document.getElementById('stk-out-bloc')||{value:''}).value||'',
     resp:currentUser?(currentUser.name||''):'Admin'
   })
+  recalculerStock()
 
   document.getElementById('modal-sortie-stock').classList.remove('open')
   setTimeout(autosave, 100)
@@ -7983,7 +7993,6 @@ function _decrementerStockLigneFacture(ligne, numFact, date, resp){
   mouvements.forEach(function(m){
     var prod = STOCK_CATALOGUE.find(function(p){ return p.id===m.prodId })
     var curr = STOCK_QTE[m.prodId] || {qte:0,prix_moyen:0}
-    STOCK_QTE[m.prodId] = { qte:curr.qte-m.qte, prix_moyen:curr.prix_moyen }
     STOCK_MOUVEMENTS.unshift({
       id: Date.now()+Math.floor(Math.random()*1000),
       date: date,
@@ -7999,6 +8008,7 @@ function _decrementerStockLigneFacture(ligne, numFact, date, resp){
       resp: resp
     })
   })
+  recalculerStock()
 }
 
 // ── BDC — Gestion des lignes ──────────────────────────────────
