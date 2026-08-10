@@ -2756,12 +2756,12 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
     </div>
   </div>
   <div class="card">
-    <div class="sec-title">🖥 Empreinte de l'appareil</div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+    <div class="sec-title">🖥 Informations de session (diagnostic)</div>
+    <div style="font-size:11px;color:var(--gray-500);margin-bottom:10px">À titre indicatif uniquement — ces informations ne bloquent ni ne surveillent aucun appareil, elles servent seulement au diagnostic en cas de problème.</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
       <div style="padding:12px;background:var(--gray-50);border-radius:9px"><div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:5px">Navigateur</div><div id="av-browser" style="font-size:12.5px;font-weight:600">—</div></div>
       <div style="padding:12px;background:var(--gray-50);border-radius:9px"><div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:5px">Langue</div><div id="av-lang" style="font-size:12.5px;font-weight:600">—</div></div>
       <div style="padding:12px;background:var(--gray-50);border-radius:9px"><div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:5px">Résolution</div><div id="av-res" style="font-size:12.5px;font-weight:600">—</div></div>
-      <div style="padding:12px;background:var(--gray-50);border-radius:9px"><div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:5px">Hash</div><div id="av-hash" style="font-size:12.5px;font-weight:600;font-family:monospace">—</div></div>
     </div>
   </div>
 </div>
@@ -6474,11 +6474,9 @@ function verrouillerEcran(){
   var el_br = document.getElementById('av-browser')
   var el_lg = document.getElementById('av-lang')
   var el_rs = document.getElementById('av-res')
-  var el_hs = document.getElementById('av-hash')
   if(el_br) el_br.textContent = br
   if(el_lg) el_lg.textContent = navigator.language||'fr-FR'
   if(el_rs) el_rs.textContent = screen.width+'x'+screen.height
-  if(el_hs){ var h=0; for(var i=0;i<ua.length;i++){h=((h<<5)-h)+ua.charCodeAt(i);h|=0} el_hs.textContent=(h>>>0).toString(16).toUpperCase().slice(0,8) }
 }
 
 function mettreAJourPageAntivol(){
@@ -6487,11 +6485,9 @@ function mettreAJourPageAntivol(){
   var el_br = document.getElementById('av-browser')
   var el_lg = document.getElementById('av-lang')
   var el_rs = document.getElementById('av-res')
-  var el_hs = document.getElementById('av-hash')
   if(el_br) el_br.textContent = br
   if(el_lg) el_lg.textContent = navigator.language||'fr-FR'
   if(el_rs) el_rs.textContent = screen.width+'x'+screen.height
-  if(el_hs){ var h=0; for(var i=0;i<ua.length;i++){h=((h<<5)-h)+ua.charCodeAt(i);h|=0} el_hs.textContent=(h>>>0).toString(16).toUpperCase().slice(0,8) }
   var delaySel = document.getElementById('av-delay-select')
   if(delaySel){
     var savedDelay = 5
