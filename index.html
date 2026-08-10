@@ -6549,7 +6549,7 @@ function calculerStatsHangars(){
 
   ;(STOCK_MOUVEMENTS||[]).forEach(function(m){
     if(m.date !== aujourdhui) return
-    if(m.type==='entree' && oeufIds[m.prodId]){
+    if(m.type==='entree' && oeufIds[m.prodId] && (m.motif||'').indexOf('Rattrapage')!==0){
       hangars[oeufIds[m.prodId]].alveoles += m.qte
     }
     if(m.type==='sortie' && m.bloc && hangars[m.bloc] && m.prodId && m.prodId.indexOf('alim_')===0){
