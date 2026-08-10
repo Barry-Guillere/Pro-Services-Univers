@@ -45,6 +45,40 @@ const TABLES_AUTORISEES = new Set([
   "production_pontes",
 ]);
 
+// Ecriture (upsert) restreinte par role, en plus de la liste blanche
+// ci-dessus. Determinee cote serveur depuis l'email de la session
+// authentifiee — jamais depuis une valeur envoyee par le client, qui
+// pourrait pretendre etre n'importe quel role.
+//
+// null      = acces total (PDG)
+// Set<...>  = uniquement ces tables
+// (absent)  = email non reconnu -> refuse par defaut
+//
+// Cette liste reflete les connexions automatiques reelles de l'app
+// (ex: une saisie sanitaire cree aussi une depense Finance, une vente
+// Commerce decremente aussi le Stock) : chaque role garde acces aux
+// tables que ses propres fonctionnalites touchent legitimement, rien
+// de plus.
+const TABLES_PAR_ROLE: Record<string, Set<string> | null> = {
+  "pdg@pro-services-univers.com": null,
+  "production@pro-services-univers.com": new Set([
+    "production_pontes", "sante_evenements",
+    "stock_quantites", "stock_mouvements",
+    "finance_operations", "finance_soldes",
+  ]),
+  "finance@pro-services-univers.com": new Set([
+    "finance_operations", "finance_soldes",
+    "commerce_clients", "commerce_factures",
+    "points_de_vente", "pdv_ventes",
+    "stock_quantites", "stock_mouvements",
+  ]),
+  "stock@pro-services-univers.com": new Set([
+    "stock_quantites", "stock_mouvements",
+    "production_pontes",
+    "finance_operations", "finance_soldes",
+  ]),
+};
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -93,6 +127,15 @@ Deno.serve(async (req) => {
   const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   if (body.action === "upsert") {
+    const email = (userData.user.email || "").toLowerCase();
+    const allowedTables = TABLES_PAR_ROLE[email];
+    if (allowedTables === undefined) {
+      return jsonResponse({ error: "Rôle non reconnu pour l'écriture." }, 403);
+    }
+    if (allowedTables !== null && !allowedTables.has(table)) {
+      return jsonResponse({ error: "Écriture non autorisée pour ce rôle sur cette table." }, 403);
+    }
+
     const rows = Array.isArray(body.rows) ? body.rows : [];
     if (rows.length === 0) return jsonResponse({ ok: true });
     const { error } = await serviceClient.from(table).upsert(rows, { onConflict: body.onConflict || "id" });
