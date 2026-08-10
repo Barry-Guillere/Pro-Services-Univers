@@ -35,6 +35,7 @@ const TABLES_AUTORISEES = new Set([
   "commerce_clients",
   "commerce_factures",
   "points_de_vente",
+  "pdv_ventes",
   "logistique_voyages",
   "logistique_recus",
   "logistique_pannes",

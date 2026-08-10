@@ -4246,6 +4246,7 @@ function autosave(){
       POS_VENTES:       typeof POS_VENTES!=='undefined'  ? POS_VENTES   : [],
       POS_SESSION_CA:   typeof POS_SESSION_CA!=='undefined'?POS_SESSION_CA: 0,
       POINTS_DE_VENTE:  typeof POINTS_DE_VENTE!=='undefined'?POINTS_DE_VENTE:[],
+      PDV_VENTES:       typeof PDV_VENTES!=='undefined'?PDV_VENTES:[],
       POS_SESSION_CA:   typeof POS_SESSION_CA!=='undefined'?POS_SESSION_CA: 0,
       // Aviculture
       PONTES_SESSION:   typeof PONTES_SESSION!=='undefined' ? PONTES_SESSION : {},
@@ -4345,6 +4346,8 @@ function restaurerDonnees(){
     // POS
     if(typeof POS_VENTES       !== 'undefined' && data.POS_VENTES)       POS_VENTES       = data.POS_VENTES
     if(typeof POINTS_DE_VENTE  !== 'undefined' && data.POINTS_DE_VENTE)  POINTS_DE_VENTE  = data.POINTS_DE_VENTE
+    if(typeof PDV_VENTES !== 'undefined' && data.PDV_VENTES) PDV_VENTES = data.PDV_VENTES
+    if(typeof recalculerVentesPDV==='function') recalculerVentesPDV()
     if(typeof POS_SESSION_CA !== 'undefined' && data.POS_SESSION_CA) POS_SESSION_CA = data.POS_SESSION_CA
     // Pontes
     if(typeof PONTES_SESSION !== 'undefined' && data.PONTES_SESSION) {
@@ -4499,7 +4502,10 @@ function syncToSupabase(data){
     return {id:f.id, numero:f.num||'', date:f.date||'', client_id:f.clientId||'', client_nom:f.clientNom||'', articles:f.lignes||[], total:f.total||0, acompte:f.acompte||0, solde:f.solde||0, paiement:f.paiement||'', statut:f.statut||''}
   })
   var pdv = (data.POINTS_DE_VENTE||[]).map(function(p){
-    return {id:p.id, nom:p.nom||'', zone:p.zone||'', adresse:p.adresse||'', gerant_select:p.gerantSelect||'', gerant_nom:p.gerantNom||'', gerant_tel:p.gerantTel||'', commission:p.commission||'', produits:p.produits||[], stock:p.stock||{}, ventes:p.ventes||[], ca:p.ca||0, statut:p.statut||'', date_creation:p.dateCreation||null}
+    return {id:p.id, nom:p.nom||'', zone:p.zone||'', adresse:p.adresse||'', gerant_select:p.gerantSelect||'', gerant_nom:p.gerantNom||'', gerant_tel:p.gerantTel||'', commission:p.commission||'', produits:p.produits||[], stock:p.stock||{}, statut:p.statut||'', date_creation:p.dateCreation||null}
+  })
+  var pdvVentes = (data.PDV_VENTES||[]).map(function(v){
+    return {id:String(v.id), pdv_id:v.pdvId||'', date:v.date||null, produit:v.produit||'', produit_nom:v.produitNom||'', qte:v.qte||0, pu:v.pu||0, montant:v.montant||0, responsable:v.resp||''}
   })
   var voyages = (data.LOG_voyages||[]).map(function(v){
     return {id:v.id, date:v.date||'', type:v.type||'', destination:v.dest||'', chauffeur:v.chauffeur||'', km_depart:v.kmDep||0, km_arrivee:v.kmArr||0, litres:v.litres||0, cout:v.cout||0, notes:v.notes||''}
@@ -4525,6 +4531,7 @@ function syncToSupabase(data){
     _cloudUpsert(token,'commerce_clients',clients),
     _cloudUpsert(token,'commerce_factures',factures),
     _cloudUpsert(token,'points_de_vente',pdv),
+    _cloudUpsert(token,'pdv_ventes',pdvVentes),
     _cloudUpsert(token,'logistique_voyages',voyages),
     _cloudUpsert(token,'logistique_recus',recus),
     _cloudUpsert(token,'logistique_pannes',pannes),
@@ -4594,9 +4601,10 @@ function pullFromSupabase(applyIfNewer, cb){
     _cloudFetch(token,'points_de_vente'), _cloudFetch(token,'logistique_voyages'),
     _cloudFetch(token,'logistique_recus'), _cloudFetch(token,'logistique_pannes'),
     _cloudFetch(token,'sante_evenements'), _cloudFetch(token,'logistique_config'),
-    _cloudFetch(token,'parametres'), _cloudFetch(token,'production_pontes')
+    _cloudFetch(token,'parametres'), _cloudFetch(token,'production_pontes'),
+    _cloudFetch(token,'pdv_ventes')
   ]).then(function(results){
-    var [finOps, finSoldes, stkQte, stkMvts, clients, factures, pdv, voyages, recus, pannes, sante, logCfg, params, pontes] = results
+    var [finOps, finSoldes, stkQte, stkMvts, clients, factures, pdv, voyages, recus, pannes, sante, logCfg, params, pontes, pdvVentesRemote] = results
 
     if(typeof FIN!=='undefined'){
       var finOpsRemote = finOps.map(function(o){ return {id:o.id, date:o.date, type:o.type, cat:o.categorie, desc:o.description, compte:o.compte, montant:parseFloat(o.montant)||0, resp:o.responsable} })
@@ -4615,8 +4623,13 @@ function pullFromSupabase(applyIfNewer, cb){
       COMMERCE.factures = _fusionnerParId(COMMERCE.factures, facturesRemote)
     }
     if(typeof POINTS_DE_VENTE!=='undefined'){
-      var pdvRemote = pdv.map(function(p){ return {id:p.id, nom:p.nom, zone:p.zone, adresse:p.adresse, gerantSelect:p.gerant_select, gerantNom:p.gerant_nom, gerantTel:p.gerant_tel, commission:p.commission, produits:p.produits, stock:p.stock, ventes:p.ventes, ca:p.ca, statut:p.statut, dateCreation:p.date_creation} })
+      var pdvRemote = pdv.map(function(p){ return {id:p.id, nom:p.nom, zone:p.zone, adresse:p.adresse, gerantSelect:p.gerant_select, gerantNom:p.gerant_nom, gerantTel:p.gerant_tel, commission:p.commission, produits:p.produits, stock:p.stock, statut:p.statut, dateCreation:p.date_creation} })
       POINTS_DE_VENTE = _fusionnerParId(POINTS_DE_VENTE, pdvRemote)
+      if(typeof PDV_VENTES!=='undefined'){
+        var pdvVentesFusionne = (pdvVentesRemote||[]).map(function(v){ return {id:v.id, pdvId:v.pdv_id, date:v.date, produit:v.produit, produitNom:v.produit_nom, qte:parseFloat(v.qte)||0, pu:parseFloat(v.pu)||0, montant:parseFloat(v.montant)||0, resp:v.responsable} })
+        PDV_VENTES = _fusionnerParId(PDV_VENTES, pdvVentesFusionne)
+      }
+      if(typeof recalculerVentesPDV==='function') recalculerVentesPDV()
     }
     if(typeof LOG!=='undefined'){
       var voyagesRemote = voyages.map(function(v){ return {id:v.id, date:v.date, type:v.type, dest:v.destination, chauffeur:v.chauffeur, kmDep:v.km_depart, kmArr:v.km_arrivee, litres:v.litres, cout:v.cout, notes:v.notes} })
@@ -7388,6 +7401,21 @@ function rafraichirStock(){
 //  MODULE POINTS DE VENTE
 // ════════════════════════════════════════════════════════════
 var POINTS_DE_VENTE = []
+var PDV_VENTES = []  // liste plate {id, pdvId, date, produit, produitNom, qte, pu, montant, resp} — fusionnee entre appareils, contrairement a pdv.ventes/pdv.ca qui etaient ecrases
+
+// Les ventes/CA de chaque PDV sont toujours recalcules depuis PDV_VENTES
+// (fusionne correctement entre appareils) plutot que stockes tels quels
+// dans chaque fiche PDV — meme classe de bug que la tresorerie/le stock :
+// une liste imbriquee dans un enregistrement remplace en bloc se fait
+// ecraser silencieusement par le dernier appareil synchronise.
+function recalculerVentesPDV(){
+  POINTS_DE_VENTE.forEach(function(pdv){
+    var ventes = PDV_VENTES.filter(function(v){ return v.pdvId===pdv.id })
+    pdv.ventes = ventes
+    pdv.ca = ventes.reduce(function(s,v){ return s+(v.montant||0) },0)
+  })
+}
+
 var PDV_CATALOGUE = [
   { id:'b30',   nom:'Barquette 30 œufs',    pu:1800 },
   { id:'alv',   nom:'Alvéole œufs',         pu:1800 },
@@ -7471,9 +7499,7 @@ function enregistrerPDV(){
       b30:  parseInt(document.getElementById('pdv-stock-b30').value)||0,
       alim: parseInt(document.getElementById('pdv-stock-alim').value)||0
     },
-    dateCreation: new Date().toISOString().split('T')[0],
-    ventes:       editId ? (POINTS_DE_VENTE.find(function(p){return p.id===editId})||{}).ventes||[] : [],
-    ca:           editId ? (POINTS_DE_VENTE.find(function(p){return p.id===editId})||{}).ca||0 : 0
+    dateCreation: new Date().toISOString().split('T')[0]
   }
 
   if(editId){
@@ -7482,6 +7508,7 @@ function enregistrerPDV(){
   } else {
     POINTS_DE_VENTE.push(pdv)
   }
+  recalculerVentesPDV()
 
   document.getElementById('modal-creer-pdv').classList.remove('open')
   setTimeout(autosave, 100)
@@ -7655,17 +7682,18 @@ function enregistrerVentePDV(){
   var pu  = parseFloat(document.getElementById('vpdv-pu').value)||0
   if(qte<=0){ alert('Quantité invalide.'); return }
 
-  pdv.ventes = pdv.ventes || []
-  pdv.ventes.unshift({
+  PDV_VENTES.unshift({
     id: Date.now(),
+    pdvId: pdvId,
     date: document.getElementById('vpdv-date').value,
     produit: prodSel.value,
     produitNom: prodSel.options[prodSel.selectedIndex].text,
     qte: qte,
     pu: pu,
-    montant: qte*pu
+    montant: qte*pu,
+    resp: currentUser ? (currentUser.name||'') : 'Admin'
   })
-  pdv.ca = pdv.ventes.reduce(function(s,v){ return s+(v.montant||0) },0)
+  recalculerVentesPDV()
 
   var msg = document.getElementById('vente-pdv-success')
   if(msg){ msg.style.display='block'; setTimeout(function(){ msg.style.display='none' },2000) }
