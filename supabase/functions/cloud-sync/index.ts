@@ -34,6 +34,7 @@ const TABLES_AUTORISEES = new Set([
   "stock_mouvements",
   "commerce_clients",
   "commerce_factures",
+  "commerce_bdc",
   "points_de_vente",
   "pdv_ventes",
   "logistique_voyages",
@@ -68,7 +69,7 @@ const TABLES_PAR_ROLE: Record<string, Set<string> | null> = {
   ]),
   "finance@pro-services-univers.com": new Set([
     "finance_operations", "finance_soldes",
-    "commerce_clients", "commerce_factures",
+    "commerce_clients", "commerce_factures", "commerce_bdc",
     "points_de_vente", "pdv_ventes",
     "stock_quantites", "stock_mouvements",
   ]),
