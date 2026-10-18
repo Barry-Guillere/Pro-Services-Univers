@@ -60,12 +60,16 @@ const TABLES_AUTORISEES = new Set([
 // Commerce decremente aussi le Stock) : chaque role garde acces aux
 // tables que ses propres fonctionnalites touchent legitimement, rien
 // de plus.
+//
+// finance_soldes est retire de production@ et stock@ : ces roles ne lisent
+// pas finance_operations, leurs soldes calcules localement seraient faux.
+// Les soldes sont recalcules par l'app depuis les operations.
 const TABLES_PAR_ROLE: Record<string, Set<string> | null> = {
   "pdg@pro-services-univers.com": null,
   "production@pro-services-univers.com": new Set([
     "production_pontes", "sante_evenements",
     "stock_quantites", "stock_mouvements",
-    "finance_operations", "finance_soldes",
+    "finance_operations",
   ]),
   "finance@pro-services-univers.com": new Set([
     "finance_operations", "finance_soldes",
@@ -76,9 +80,39 @@ const TABLES_PAR_ROLE: Record<string, Set<string> | null> = {
   "stock@pro-services-univers.com": new Set([
     "stock_quantites", "stock_mouvements",
     "production_pontes",
-    "finance_operations", "finance_soldes",
+    "finance_operations",
   ]),
 };
+
+// Lecture (select) restreinte par role : tables reellement lues par les
+// ecrans de chaque role dans index.html. Meme convention que ci-dessus.
+//
+// Une table modifiable mais non lisible (ex: finance_operations pour
+// production@) est en AJOUT SEUL : l'upsert ignore les lignes deja
+// presentes, pour qu'une copie locale perimee ne puisse jamais ecraser
+// les donnees d'un autre role.
+const TABLES_LECTURE_PAR_ROLE: Record<string, Set<string> | null> = {
+  "pdg@pro-services-univers.com": null,
+  "production@pro-services-univers.com": new Set([
+    "production_pontes", "sante_evenements",
+    "stock_mouvements", "stock_quantites",
+    "parametres",
+  ]),
+  "finance@pro-services-univers.com": new Set([
+    "finance_operations", "finance_soldes",
+    "commerce_clients", "commerce_factures", "commerce_bdc",
+    "points_de_vente", "pdv_ventes",
+    "stock_mouvements", "stock_quantites",
+    "parametres",
+  ]),
+  "stock@pro-services-univers.com": new Set([
+    "stock_mouvements", "stock_quantites",
+    "production_pontes",
+    "parametres",
+  ]),
+};
+
+const enListe = (s: Set<string> | null) => (s === null ? "*" : [...s]);
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -120,35 +154,51 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Corps de requête JSON invalide." }, 400);
   }
 
+  // Role determine cote serveur depuis l'email de la session verifiee.
+  const email = (userData.user.email || "").toLowerCase();
+  const lectureRole = TABLES_LECTURE_PAR_ROLE[email];
+  const ecritureRole = TABLES_PAR_ROLE[email];
+  if (lectureRole === undefined || ecritureRole === undefined) {
+    return jsonResponse({ error: "Rôle non reconnu." }, 403);
+  }
+
+  // Droits du compte connecte, pour que l'app n'envoie/ne lise que ses tables.
+  if (body.action === "droits") {
+    return jsonResponse({ lecture: enListe(lectureRole), ecriture: enListe(ecritureRole) });
+  }
+
   const table = body.table || "";
   if (!TABLES_AUTORISEES.has(table)) {
     return jsonResponse({ error: "Table non autorisée." }, 403);
   }
 
+  const peutLire = lectureRole === null || lectureRole.has(table);
   const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   if (body.action === "upsert") {
-    const email = (userData.user.email || "").toLowerCase();
-    const allowedTables = TABLES_PAR_ROLE[email];
-    if (allowedTables === undefined) {
-      return jsonResponse({ error: "Rôle non reconnu pour l'écriture." }, 403);
-    }
-    if (allowedTables !== null && !allowedTables.has(table)) {
+    if (ecritureRole !== null && !ecritureRole.has(table)) {
       return jsonResponse({ error: "Écriture non autorisée pour ce rôle sur cette table." }, 403);
     }
 
     const rows = Array.isArray(body.rows) ? body.rows : [];
     if (rows.length === 0) return jsonResponse({ ok: true });
-    const { error } = await serviceClient.from(table).upsert(rows, { onConflict: body.onConflict || "id" });
+    const { error } = await serviceClient.from(table).upsert(rows, {
+      onConflict: body.onConflict || "id",
+      // Ajout seul si le role ne peut pas lire la table (ON CONFLICT DO NOTHING).
+      ignoreDuplicates: !peutLire,
+    });
     if (error) return jsonResponse({ error: error.message }, 500);
     return jsonResponse({ ok: true });
   }
 
   if (body.action === "select") {
+    if (!peutLire) {
+      return jsonResponse({ error: "Lecture non autorisée pour ce rôle sur cette table." }, 403);
+    }
     const { data, error } = await serviceClient.from(table).select(body.select || "*");
     if (error) return jsonResponse({ error: error.message }, 500);
     return jsonResponse(data ?? []);
   }
 
-  return jsonResponse({ error: "Action inconnue (attendu: 'upsert' ou 'select')." }, 400);
+  return jsonResponse({ error: "Action inconnue (attendu: 'droits', 'upsert' ou 'select')." }, 400);
 });
