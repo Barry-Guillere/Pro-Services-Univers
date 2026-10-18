@@ -4501,6 +4501,11 @@ function syncToSupabase(data){
   var factures = (data.COMMERCE_factures||[]).map(function(f){
     return {id:f.id, numero:f.num||'', date:f.date||'', client_id:f.clientId||'', client_nom:f.clientNom||'', articles:f.lignes||[], total:f.total||0, acompte:f.acompte||0, solde:f.solde||0, paiement:f.paiement||'', statut:f.statut||''}
   })
+  // commerce_bdc : id bigint côté serveur, 'BDC-<horodatage>' côté app → on n'envoie que l'horodatage
+  var bdcs = (data.COMMERCE_bdc||[]).map(function(b){
+    var n = parseInt(String(b.id).replace(/^BDC-/,''), 10)
+    return isNaN(n) ? null : {id:n, data:b}
+  }).filter(Boolean)
   var pdv = (data.POINTS_DE_VENTE||[]).map(function(p){
     return {id:p.id, nom:p.nom||'', zone:p.zone||'', adresse:p.adresse||'', gerant_select:p.gerantSelect||'', gerant_nom:p.gerantNom||'', gerant_tel:p.gerantTel||'', commission:p.commission||'', produits:p.produits||[], stock:p.stock||{}, statut:p.statut||'', date_creation:p.dateCreation||null}
   })
@@ -4530,6 +4535,7 @@ function syncToSupabase(data){
     _cloudUpsert(token,'stock_mouvements',stockMvts),
     _cloudUpsert(token,'commerce_clients',clients),
     _cloudUpsert(token,'commerce_factures',factures),
+    _cloudUpsert(token,'commerce_bdc',bdcs),
     _cloudUpsert(token,'points_de_vente',pdv),
     _cloudUpsert(token,'pdv_ventes',pdvVentes),
     _cloudUpsert(token,'logistique_voyages',voyages),
@@ -4602,9 +4608,12 @@ function pullFromSupabase(applyIfNewer, cb){
     _cloudFetch(token,'logistique_recus'), _cloudFetch(token,'logistique_pannes'),
     _cloudFetch(token,'sante_evenements'), _cloudFetch(token,'logistique_config'),
     _cloudFetch(token,'parametres'), _cloudFetch(token,'production_pontes'),
-    _cloudFetch(token,'pdv_ventes')
+    _cloudFetch(token,'pdv_ventes'),
+    // Tolérant : si cloud-sync n'est pas encore redéployé avec commerce_bdc,
+    // on garde les BDC locaux au lieu de faire échouer toute la réception.
+    _cloudFetch(token,'commerce_bdc').catch(function(){ return null })
   ]).then(function(results){
-    var [finOps, finSoldes, stkQte, stkMvts, clients, factures, pdv, voyages, recus, pannes, sante, logCfg, params, pontes, pdvVentesRemote] = results
+    var [finOps, finSoldes, stkQte, stkMvts, clients, factures, pdv, voyages, recus, pannes, sante, logCfg, params, pontes, pdvVentesRemote, bdcRows] = results
 
     if(typeof FIN!=='undefined'){
       var finOpsRemote = finOps.map(function(o){ return {id:o.id, date:o.date, type:o.type, cat:o.categorie, desc:o.description, compte:o.compte, montant:parseFloat(o.montant)||0, resp:o.responsable} })
@@ -4621,6 +4630,17 @@ function pullFromSupabase(applyIfNewer, cb){
       COMMERCE.clients = _fusionnerParId(COMMERCE.clients, clientsRemote)
       var facturesRemote = factures.map(function(f){ return {id:f.id, num:f.numero, date:f.date, clientId:f.client_id, clientNom:f.client_nom, lignes:f.articles||[], total:f.total, acompte:f.acompte, solde:f.solde, paiement:f.paiement, statut:f.statut} })
       COMMERCE.factures = _fusionnerParId(COMMERCE.factures, facturesRemote)
+      // Table encore vide côté serveur (première synchro) : on garde les BDC
+      // locaux, sinon _fusionnerParId supprimerait ceux de plus de 2 minutes ;
+      // l'autosave qui suit les enverra.
+      if(bdcRows && bdcRows.length){
+        var bdcRemote = bdcRows.map(function(r){
+          var b = Object.assign({}, r.data||{})
+          b.id = 'BDC-'+r.id
+          return b
+        })
+        COMMERCE.bdc = _fusionnerParId(COMMERCE.bdc, bdcRemote)
+      }
     }
     if(typeof POINTS_DE_VENTE!=='undefined'){
       var pdvRemote = pdv.map(function(p){ return {id:p.id, nom:p.nom, zone:p.zone, adresse:p.adresse, gerantSelect:p.gerant_select, gerantNom:p.gerant_nom, gerantTel:p.gerant_tel, commission:p.commission, produits:p.produits, stock:p.stock, statut:p.statut, dateCreation:p.date_creation} })

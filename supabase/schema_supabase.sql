@@ -4,6 +4,7 @@
 --  (avant de déployer l'Edge Function `cloud-sync` — voir supabase/README.md)
 -- ════════════════════════════════════════════════════════════
 --
+-- 16 tables = TABLES_AUTORISEES de functions/cloud-sync/index.ts.
 -- Colonnes calquées sur syncToSupabase() / pullFromSupabase() dans
 -- index.html : toute modification de ces fonctions doit être répercutée ici.
 --
@@ -82,6 +83,15 @@ create table if not exists public.commerce_factures (
   solde      numeric default 0,
   paiement   text    default '',
   statut     text    default ''
+);
+
+-- Bons de commande : structure différente des autres tables (objet BDC
+-- complet dans `data`). L'app génère des id 'BDC-<horodatage>' : elle
+-- n'envoie que l'horodatage (bigint) et remet le préfixe à la réception.
+create table if not exists public.commerce_bdc (
+  id         bigint primary key,
+  data       jsonb,
+  updated_at timestamptz default now()
 );
 
 -- ── Points de vente ───────────────────────────────────────────
@@ -200,6 +210,7 @@ alter table public.stock_quantites    enable row level security;
 alter table public.stock_mouvements   enable row level security;
 alter table public.commerce_clients   enable row level security;
 alter table public.commerce_factures  enable row level security;
+alter table public.commerce_bdc       enable row level security;
 alter table public.points_de_vente    enable row level security;
 alter table public.pdv_ventes         enable row level security;
 alter table public.logistique_voyages enable row level security;

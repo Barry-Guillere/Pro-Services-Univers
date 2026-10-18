@@ -21,6 +21,7 @@ alter table if exists public.stock_quantites      enable row level security;
 alter table if exists public.stock_mouvements     enable row level security;
 alter table if exists public.commerce_clients     enable row level security;
 alter table if exists public.commerce_factures    enable row level security;
+alter table if exists public.commerce_bdc         enable row level security;
 alter table if exists public.points_de_vente      enable row level security;
 alter table if exists public.pdv_ventes           enable row level security;
 alter table if exists public.production_pontes    enable row level security;
