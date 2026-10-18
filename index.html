@@ -378,6 +378,7 @@ html::-webkit-scrollbar-thumb{border-color:var(--bg)}
 .verrou-aide{font-size:10px;color:var(--gray-600);line-height:1.5;margin-bottom:10px}
 .verrou-champ{width:100%;min-height:var(--tap);border:1.5px solid var(--gray-200);border-radius:12px;text-align:center;font-size:14px;letter-spacing:.3em;outline:none;margin-bottom:8px}
 .verrou-champ:focus{border-color:var(--brand)}
+.verrou-champ-mdp{letter-spacing:normal;font-size:11px}
 .verrou-sortie{margin-top:8px;background:none;border:none;color:var(--gray-500);font-size:10px;text-decoration:underline;cursor:pointer;width:100%}
 
 /* ── Écran : tableau de bord ── */
@@ -3596,6 +3597,7 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
      </div>
      <div id="verrou-mode-creation" style="display:none">
        <div class="verrou-aide" id="verrou-aide-creation"></div>
+       <input type="password" id="verrou-mdp" class="verrou-champ verrou-champ-mdp" autocomplete="current-password" placeholder="Mot de passe du compte" style="display:none">
        <input type="password" id="verrou-pin-nouveau" class="verrou-champ" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="Nouveau code PIN">
        <input type="password" id="verrou-pin-confirm" class="verrou-champ" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="Confirmer le code" onkeydown="if(event.key==='Enter')enregistrerPinVerrou()">
        <div class="verrou-erreur" id="verrou-erreur-creation"></div>
@@ -6775,6 +6777,8 @@ function motifPinRefuse(pin){
 }
 
 function changerCodePin(){
+  // Aucun code sur cet appareil : premier choix via l'écran protégé par le mot de passe du compte
+  if(!getAvPin()){ verrouillerEcran(); return }
   if(getAvPin()){
     var actuel = prompt('Code PIN actuel :')
     if(actuel === null) return
@@ -6819,10 +6823,10 @@ function verrouillerEcran(){
   var pin = document.getElementById('verrou-pin'); if(pin) pin.value = ''
   v.style.display = 'flex'
   try{ closeMobileSidebar() }catch(e){}
-  if(!getAvPin()) _modeVerrou('creation', 'Aucun code PIN sur cet appareil. Choisissez-en un : au moins 4 chiffres, pas de code trop simple (1234, 0000, 1111, 2345…).')
+  if(!getAvPin()) _modeVerrou('creation', 'Aucun code PIN sur cet appareil. Saisissez le mot de passe de votre compte, puis choisissez un code : au moins 4 chiffres, pas de code trop simple (1234, 0000, 1111, 2345…).', true)
   else { _modeVerrou('saisie'); setTimeout(function(){ if(pin) pin.focus() }, 50) }
 }
-function _modeVerrou(mode, aide){
+function _modeVerrou(mode, aide, exigerMdp){
   var s = document.getElementById('verrou-mode-saisie'), c = document.getElementById('verrou-mode-creation')
   if(s) s.style.display = mode==='saisie' ? '' : 'none'
   if(c) c.style.display = mode==='creation' ? '' : 'none'
@@ -6830,21 +6834,46 @@ function _modeVerrou(mode, aide){
   if(titre) titre.textContent = mode==='creation' ? 'Choisissez votre code PIN' : 'Session verrouillée'
   if(mode==='creation'){
     var a = document.getElementById('verrou-aide-creation'); if(a) a.textContent = aide || ''
-    ;['verrou-pin-nouveau','verrou-pin-confirm'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value='' })
+    ;['verrou-mdp','verrou-pin-nouveau','verrou-pin-confirm'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value='' })
+    var mdp = document.getElementById('verrou-mdp')
+    if(mdp) mdp.style.display = exigerMdp ? '' : 'none'
+    _verrouExigeMdp = !!exigerMdp
     var ec = document.getElementById('verrou-erreur-creation'); if(ec) ec.textContent = ''
-    setTimeout(function(){ var n=document.getElementById('verrou-pin-nouveau'); if(n) n.focus() }, 50)
+    setTimeout(function(){ var n=document.getElementById(exigerMdp ? 'verrou-mdp' : 'verrou-pin-nouveau'); if(n) n.focus() }, 50)
   }
 }
+var _verrouExigeMdp = false
 function enregistrerPinVerrou(){
   var n = (document.getElementById('verrou-pin-nouveau')||{}).value || ''
   var c = (document.getElementById('verrou-pin-confirm')||{}).value || ''
   var ec = document.getElementById('verrou-erreur-creation')
+  function erreur(m){ if(ec) ec.textContent = m }
   var motif = motifPinRefuse(n)
   if(!motif && n !== c) motif = 'Les deux codes ne correspondent pas.'
-  if(motif){ if(ec) ec.textContent = motif; return }
-  try{ localStorage.setItem('av_pin', n) }catch(e){ if(ec) ec.textContent = "Impossible d'enregistrer le code sur cet appareil."; return }
-  _leverVerrou()
-  try{ resetSessionTimer() }catch(e){}
+  if(motif){ erreur(motif); return }
+  function enregistrer(){
+    try{ localStorage.setItem('av_pin', n) }catch(e){ erreur("Impossible d'enregistrer le code sur cet appareil."); return }
+    _leverVerrou()
+    try{ resetSessionTimer() }catch(e){}
+  }
+  if(!_verrouExigeMdp){ enregistrer(); return }
+  // Premier choix du code : le mot de passe du compte connecté est vérifié par Supabase
+  var mdp = (document.getElementById('verrou-mdp')||{}).value || ''
+  var email = (currentUser && currentUser.email) || ''
+  if(!mdp){ erreur('Saisissez le mot de passe de votre compte.'); return }
+  if(!email || !sbClient){ erreur('Session indisponible : utilisez « Se déconnecter » puis reconnectez-vous.'); return }
+  erreur('Vérification du mot de passe…')
+  sbClient.auth.signInWithPassword({ email: email, password: mdp }).then(function(res){
+    if(res && res.error){
+      erreur(res.error.message === 'Invalid login credentials' ? 'Mot de passe incorrect.' : 'Vérification impossible : ' + res.error.message)
+      var champ = document.getElementById('verrou-mdp'); if(champ){ champ.value = ''; champ.focus() }
+      return
+    }
+    erreur('')
+    enregistrer()
+  }).catch(function(){
+    erreur('Vérification impossible (connexion internet requise).')
+  })
 }
 function deverrouillerEcran(){
   var pin = document.getElementById('verrou-pin')
