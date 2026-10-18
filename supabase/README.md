@@ -64,8 +64,9 @@ Function (`SUPABASE_SERVICE_ROLE_KEY`) — jamais transmise au navigateur.
 
 Déploiement (dashboard, comme `claude-chat`) :
 1. **SQL Editor** : exécuter `schema_supabase.sql` (tables Finance, Stock,
-   Commerce, Logistique, Points de vente, Sanitaire, Paramètres — un fichier
-   séparé, non fourni ici).
+   Commerce, Points de vente, Logistique, Sanitaire, Production,
+   Paramètres). Ses colonnes reflètent `syncToSupabase()` /
+   `pullFromSupabase()` dans `index.html` : à garder synchronisés.
 2. **Edge Functions → New function** → nom `cloud-sync` → coller
    `functions/cloud-sync/index.ts` → Deploy.
 3. Sur cette fonction : **Settings → "Verify JWT with legacy secret"** =
