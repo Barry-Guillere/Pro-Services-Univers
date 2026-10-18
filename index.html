@@ -366,6 +366,17 @@ html::-webkit-scrollbar-thumb{border-color:var(--bg)}
 .demo-btn{min-height:var(--tap);padding:6px 10px;border-radius:12px;display:flex;flex-direction:column;justify-content:center}
 .demo-btn:hover{border-color:var(--brand);background:var(--brand-light)}
 
+/* ── Écran de verrouillage ── */
+.verrou-overlay{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px;background:radial-gradient(circle at 50% 35%,var(--sidebar-active),var(--sidebar-bg) 70%)}
+.verrou-card{width:240px;background:var(--white);border-radius:var(--radius-card);padding:22px 18px 16px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.verrou-icone{font-size:26px;margin-bottom:6px}
+.verrou-titre{font-size:14px;font-weight:800}
+.verrou-nom{font-size:10px;color:var(--gray-500);margin:2px 0 14px}
+#verrou-pin{width:100%;min-height:var(--tap);border:1.5px solid var(--gray-200);border-radius:12px;text-align:center;font-size:16px;letter-spacing:.4em;outline:none;margin-bottom:6px}
+#verrou-pin:focus{border-color:var(--brand)}
+.verrou-erreur{min-height:16px;font-size:10px;font-weight:600;color:#DC2626;margin-bottom:6px}
+.verrou-sortie{margin-top:8px;background:none;border:none;color:var(--gray-500);font-size:10px;text-decoration:underline;cursor:pointer;width:100%}
+
 /* ── Écran : tableau de bord ── */
 #page-dashboard .page-title{font-size:15px;font-weight:800;letter-spacing:-.01em}
 #page-dashboard .page-sub{font-size:9.5px}
@@ -448,6 +459,30 @@ html::-webkit-scrollbar-thumb{border-color:var(--bg)}
 }
 @media(max-width:480px){
   .kpi-grid.c4,.kpi-grid.c3{grid-template-columns:1fr !important}
+}
+/* ── Petits écrans : grilles en ligne et barres d'actions qui passent à la ligne ── */
+@media(max-width:900px){
+  .page-header>div,.card>div[style*="justify-content:space-between"]{flex-wrap:wrap;gap:8px}
+  .card>div[style*="justify-content:space-between"]>div[style*="display:flex"]{flex-wrap:wrap}
+  .tabs,.seg-tabs{flex-wrap:wrap;width:auto;max-width:100%}
+  .page [style*="grid-template-columns:repeat(5"]{grid-template-columns:repeat(3,1fr) !important}
+  .page [style*="grid-template-columns:repeat(4"],.page [style*="grid-template-columns:repeat(3"],.page [style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr 1fr !important}
+}
+/* ── Téléphone : menu en tiroir (bouton ☰), contenu sur toute la largeur ── */
+@media(max-width:600px){
+  .sidebar{width:240px;left:0;transform:translateX(-100%);transition:transform .2s ease;box-shadow:none}
+  .sidebar{z-index:1002}
+  body.sidebar-open .sidebar{transform:none;box-shadow:0 0 40px rgba(0,0,0,.4)}
+  body.sidebar-open .mobile-menu-btn{display:none}
+  .sb-logo-name,.sb-logo-ver,.sb-section,.sb-uname,.sb-urole{display:revert}
+  .sb-logo{justify-content:flex-start;padding:16px 18px}
+  .sb-user{flex-direction:row;padding:10px}
+  .nav-item{font-size:11px;padding:8px 10px}
+  .mobile-menu-btn{display:flex}
+  .main{margin-left:0 !important;margin-right:0 !important}
+  .page{padding:68px 14px 26px !important}
+  .page [style*="grid-template-columns"]:not(.kpi-grid){grid-template-columns:1fr !important}
+  .form-grid{grid-template-columns:1fr !important}
 }
 </style>
 </head>
@@ -1661,7 +1696,7 @@ html::-webkit-scrollbar-thumb{border-color:var(--bg)}
     <div class="kpi-card" id="kpi-panne-card">
       <div class="kpi-label">Pannes en cours</div>
       <div class="kpi-value" id="log-pannes-actives" style="color:#15803D">0</div>
-      <div class="kpi-delta neutral">Véhicule opérationnel</div>
+      <div class="kpi-delta neutral" id="log-pannes-delta">Véhicule opérationnel</div>
     </div>
   </div>
 
@@ -1954,7 +1989,7 @@ html::-webkit-scrollbar-thumb{border-color:var(--bg)}
       </div>
       <div class="form-field" id="rap-field-mois">
         <label>Mois</label>
-        <select id="rap-mois">
+        <select id="rap-mois" onchange="majApercuRapport()">
           <option value="01">Janvier</option><option value="02">Février</option>
           <option value="03">Mars</option><option value="04" selected>Avril</option>
           <option value="05">Mai</option><option value="06">Juin</option>
@@ -1965,7 +2000,7 @@ html::-webkit-scrollbar-thumb{border-color:var(--bg)}
       </div>
       <div class="form-field">
         <label>Année</label>
-        <select id="rap-annee">
+        <select id="rap-annee" onchange="majApercuRapport()">
           <option value="2024">2024</option>
           <option value="2025">2025</option>
           <option value="2026" selected>2026</option>
@@ -1995,19 +2030,19 @@ html::-webkit-scrollbar-thumb{border-color:var(--bg)}
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
       <div style="padding:12px;background:var(--gray-50);border-radius:12px;text-align:center">
         <div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:5px">Alvéoles récoltées</div>
-        <div style="font-size:22px;font-weight:800;color:#15803D">—</div>
+        <div id="rap-ap-alv" style="font-size:22px;font-weight:800;color:#15803D">—</div>
       </div>
       <div style="padding:12px;background:var(--gray-50);border-radius:12px;text-align:center">
         <div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:5px">Taux ponte moy.</div>
-        <div style="font-size:22px;font-weight:800;color:#1D4ED8">—</div>
+        <div id="rap-ap-taux" style="font-size:22px;font-weight:800;color:#1D4ED8">—</div>
       </div>
       <div style="padding:12px;background:var(--gray-50);border-radius:12px;text-align:center">
         <div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:5px">CA période</div>
-        <div style="font-size:22px;font-weight:800;color:#15803D">—</div>
+        <div id="rap-ap-ca" style="font-size:22px;font-weight:800;color:#15803D">—</div>
       </div>
       <div style="padding:12px;background:var(--gray-50);border-radius:12px;text-align:center">
         <div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:5px">Mortalités</div>
-        <div style="font-size:22px;font-weight:800;color:#DC2626">—</div>
+        <div id="rap-ap-morts" style="font-size:22px;font-weight:800;color:#DC2626">—</div>
       </div>
     </div>
   </div>
@@ -2412,9 +2447,9 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
       <div style="padding:12px;background:var(--gray-50);border-radius:9px">
-        <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px">Mot de passe unique</div>
+        <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px">Mot de passe</div>
         <div style="font-size:13px;font-weight:800;color:var(--gray-700);font-family:monospace">••••••••</div>
-        <div style="font-size:11px;color:var(--gray-400);margin-top:3px">Commun à toute l'équipe</div>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:3px">Un par compte, vérifié par le serveur</div>
       </div>
       <div style="padding:12px;background:var(--gray-50);border-radius:9px">
         <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px">Licence antivol</div>
@@ -2515,11 +2550,11 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
           • Minimum 8 caractères<br>
           • Au moins 1 chiffre<br>
           • Au moins 1 majuscule<br>
-          • Partagé avec toute l'équipe<br>
-          • Sauvegardé en local (chiffré)
+          • Propre à votre compte<br>
+          • Vérifié par le serveur (jamais stocké dans le navigateur)
         </div>
         <div style="margin-top:10px;padding:8px 10px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);border-radius:7px;font-size:11px;color:#92400E">
-          ⚠️ Ce logiciel étant un fichier HTML local, le mot de passe est protégé par hash SHA-256 dans le navigateur.
+          ℹ️ Chaque compte a son propre mot de passe, géré par Supabase Auth : seul le mot de passe du compte connecté est modifié ici.
         </div>
       </div>
     </div>
@@ -3545,6 +3580,18 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
   </div><!-- /main -->
  </div><!-- /layout -->
  <!-- Indicateur autosave discret -->
+ <!-- ══ ÉCRAN DE VERROUILLAGE (Antivol) ══ -->
+ <div id="ecran-verrou" class="verrou-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="verrou-titre">
+   <div class="verrou-card">
+     <div class="verrou-icone">🔒</div>
+     <div class="verrou-titre" id="verrou-titre">Session verrouillée</div>
+     <div class="verrou-nom" id="verrou-nom"></div>
+     <input type="password" id="verrou-pin" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Code PIN" onkeydown="if(event.key==='Enter')deverrouillerEcran()">
+     <div class="verrou-erreur" id="verrou-erreur"></div>
+     <button class="btn btn-p" style="width:100%" onclick="deverrouillerEcran()">Déverrouiller</button>
+     <button class="verrou-sortie" onclick="quitterVerrou()">Se déconnecter</button>
+   </div>
+ </div>
  <div id="autosave-indicator" style="position:fixed;bottom:14px;right:16px;background:rgba(29,158,117,.92);color:white;font-size:11px;font-weight:600;padding:6px 14px;border-radius:20px;opacity:0;transition:opacity .4s;z-index:9999;pointer-events:none"></div>
 </div><!-- /app -->
 
@@ -3767,6 +3814,7 @@ function doLogin(){
       return
     }
     _hideLoginError();
+    _leverVerrou()
     return _chargerSessionDepuisSupabase(res.data.user)
   }).catch(function(err){
     _showLoginError('⚠️ Erreur de connexion réseau : ' + (err && err.message || err))
@@ -3868,7 +3916,12 @@ function restaurerSessionAuto(){
   return sbClient.auth.getSession().then(function(res){
     var session = res && res.data && res.data.session
     if(!session || !session.user) return false
-    return _chargerSessionDepuisSupabase(session.user)
+    return _chargerSessionDepuisSupabase(session.user).then(function(ok){
+      var verrouille = false
+      try{ verrouille = sessionStorage.getItem('av_verrouille')==='1' }catch(e){}
+      if(ok && verrouille) verrouillerEcran()
+      return ok
+    })
   }).catch(function(){ return false })
 }
 
@@ -3885,6 +3938,7 @@ function doLogout(){
   if(sbClient){ try{ sbClient.auth.signOut() }catch(e){} }
   currentUser = null
   _cloudDroits = null
+  _leverVerrou()
   document.getElementById('login-screen').style.display='flex'
   document.getElementById('app').style.display='none'
 }
@@ -4247,10 +4301,59 @@ function updateTimestamp(){
   el.textContent = jours[now.getDay()]+' '+now.getDate()+' '+mois[now.getMonth()]+' '+now.getFullYear()+' · '+hms()
 }
 
+var _rapDateInitialisee = false
 function initRapports(){
-  // Placeholder — rafraîchir l'aperçu des données dans les rapports
+  // Première ouverture : mois et année du jour (au lieu d'Avril fixe)
+  if(!_rapDateInitialisee){
+    var now = new Date()
+    var selM = document.getElementById('rap-mois'), selA = document.getElementById('rap-annee')
+    if(selM) selM.value = String(now.getMonth()+1).padStart(2,'0')
+    if(selA){
+      var an = String(now.getFullYear())
+      if(!Array.prototype.some.call(selA.options,function(o){return o.value===an})){
+        var opt = document.createElement('option'); opt.value = an; opt.textContent = an; selA.appendChild(opt)
+      }
+      selA.value = an
+    }
+    _rapDateInitialisee = true
+  }
   var el = document.getElementById('rap-periode')
   if(el) updateRapOptions()
+}
+
+// ── Aperçu des données pour la période choisie dans les options ──
+function _periodeRapport(){
+  var type = (document.getElementById('rap-periode')||{}).value || 'mensuel'
+  var now = new Date()
+  var annee = parseInt((document.getElementById('rap-annee')||{}).value) || now.getFullYear()
+  var mois = parseInt((document.getElementById('rap-mois')||{}).value) || (now.getMonth()+1)
+  var debut, fin
+  if(type==='hebdo'){ fin = new Date(now.getFullYear(),now.getMonth(),now.getDate()+1); debut = new Date(fin); debut.setDate(fin.getDate()-7) }
+  else if(type==='mensuel'){ debut = new Date(annee,mois-1,1); fin = new Date(annee,mois,1) }
+  else if(type==='trimestriel'){ var q = Math.floor(now.getMonth()/3); debut = new Date(annee,q*3,1); fin = new Date(annee,q*3+3,1) }
+  else { debut = new Date(annee,0,1); fin = new Date(annee+1,0,1) }
+  return function(dateStr){
+    if(!dateStr) return false
+    var p = String(dateStr).slice(0,10).split('-'); if(p.length<3) return false
+    var d = new Date(+p[0], +p[1]-1, +p[2])
+    return d>=debut && d<fin
+  }
+}
+function majApercuRapport(){
+  var dansPeriode = _periodeRapport()
+  var pontes = (typeof PONTES_HISTORIQUE!=='undefined' ? PONTES_HISTORIQUE : []).filter(function(p){ return dansPeriode(p.date) })
+  var alv = pontes.reduce(function(s,p){ return s+(parseFloat(p.total)||0) },0)
+  var tauxListe = pontes.map(function(p){ return parseFloat(p.taux)||0 }).filter(function(t){ return t>0 })
+  var taux = tauxListe.length ? tauxListe.reduce(function(s,t){return s+t},0)/tauxListe.length : null
+  var ca = (typeof FIN!=='undefined' ? FIN.operations : []).filter(function(o){ return o.type==='recette' && dansPeriode(o.date) })
+    .reduce(function(s,o){ return s+(o.montant||0) },0)
+  var morts = (typeof MORTALITES_LOG!=='undefined' ? MORTALITES_LOG : []).filter(function(m){ return dansPeriode(m.date) })
+    .reduce(function(s,m){ return s+(m.nb||0) },0)
+  function set(id,v){ var e=document.getElementById(id); if(e) e.textContent=v }
+  set('rap-ap-alv', alv>0 ? alv.toLocaleString('fr-FR') : '0')
+  set('rap-ap-taux', taux!==null ? taux.toFixed(1)+' %' : '—')
+  set('rap-ap-ca', ca.toLocaleString('fr-FR')+' GNF')
+  set('rap-ap-morts', morts.toLocaleString('fr-FR'))
 }
 
 // ── Mise à jour initiale du dashboard apres login ─────────────
@@ -6632,6 +6735,7 @@ function updateRapOptions(){
   var p = document.getElementById('rap-periode').value
   var mf = document.getElementById('rap-field-mois')
   if(mf) mf.style.display = p==='mensuel' ? '' : 'none'
+  majApercuRapport()
 }
 
 
@@ -6665,23 +6769,42 @@ function getSessionTimeoutMs(){
   return minutes * 60 * 1000
 }
 
+// Verrouillage réel : écran plein qui masque l'app jusqu'à la saisie du code PIN.
+// L'état est mémorisé pour l'onglet (sessionStorage) : recharger la page ne le contourne pas.
+function ecranVerrouille(){
+  var v = document.getElementById('ecran-verrou')
+  return !!(v && v.style.display !== 'none')
+}
 function verrouillerEcran(){
-  var pin = prompt('Ecran verrouille\nEntrez votre code PIN pour deverrouiller:')
-  if(pin === null) return
-  if(pin === getAvPin()){
-    // Deja deverrouille
+  var v = document.getElementById('ecran-verrou')
+  if(!v) return
+  try{ sessionStorage.setItem('av_verrouille','1') }catch(e){}
+  var nom = document.getElementById('verrou-nom')
+  if(nom) nom.textContent = (currentUser && currentUser.name) || ''
+  var err = document.getElementById('verrou-erreur'); if(err) err.textContent = ''
+  var pin = document.getElementById('verrou-pin'); if(pin) pin.value = ''
+  v.style.display = 'flex'
+  try{ closeMobileSidebar() }catch(e){}
+  setTimeout(function(){ if(pin) pin.focus() }, 50)
+}
+function deverrouillerEcran(){
+  var pin = document.getElementById('verrou-pin')
+  var err = document.getElementById('verrou-erreur')
+  if(pin && pin.value === getAvPin()){
+    _leverVerrou()
+    try{ resetSessionTimer() }catch(e){}
   } else {
-    alert('Code PIN incorrect')
+    if(err) err.textContent = 'Code PIN incorrect'
+    if(pin){ pin.value = ''; pin.focus() }
   }
-  // Remplir empreinte appareil
-  var ua = navigator.userAgent
-  var br = ua.indexOf('Chrome')>-1?'Chrome':ua.indexOf('Firefox')>-1?'Firefox':ua.indexOf('Safari')>-1?'Safari':'Autre'
-  var el_br = document.getElementById('av-browser')
-  var el_lg = document.getElementById('av-lang')
-  var el_rs = document.getElementById('av-res')
-  if(el_br) el_br.textContent = br
-  if(el_lg) el_lg.textContent = navigator.language||'fr-FR'
-  if(el_rs) el_rs.textContent = screen.width+'x'+screen.height
+}
+function _leverVerrou(){
+  try{ sessionStorage.removeItem('av_verrouille') }catch(e){}
+  var v = document.getElementById('ecran-verrou'); if(v) v.style.display = 'none'
+}
+function quitterVerrou(){
+  _leverVerrou()
+  doLogout()
 }
 
 function mettreAJourPageAntivol(){
@@ -7034,6 +7157,12 @@ function rafraichirFinance(){
   setEl('sol-banque', (FIN.soldes.banque||0).toLocaleString('fr-FR')+' GNF')
   setEl('sol-mobile', (FIN.soldes.mobile||0).toLocaleString('fr-FR')+' GNF')
   setEl('sol-total', totalSoldes.toLocaleString('fr-FR')+' GNF')
+  // Montant négatif en rouge, positif ou nul dans la couleur d'origine
+  ;[['fin-tresor',totalSoldes,'var(--brand)'],['fin-benefice',recettesMois-depensesMois,'#1D4ED8'],
+    ['sol-caisse',FIN.soldes.caisse||0,'var(--brand)'],['sol-banque',FIN.soldes.banque||0,'var(--brand)'],
+    ['sol-mobile',FIN.soldes.mobile||0,'var(--brand)'],['sol-total',totalSoldes,'var(--brand)']].forEach(function(s){
+    var el=document.getElementById(s[0]); if(el) el.style.color = s[1]<0 ? '#DC2626' : s[2]
+  })
 
   setEl('fin-nb-ops', FIN.operations.length+' opération(s)')
 
@@ -7252,6 +7381,13 @@ function rafraichirLogistique(){
 
   var pannesActives = (LOG.pannes||[]).filter(function(p){return p.statut!=='resolu'})
   setEl('log-pannes-actives', pannesActives.length)
+  var elPannes = document.getElementById('log-pannes-actives')
+  if(elPannes) elPannes.style.color = pannesActives.length>0 ? '#DC2626' : '#15803D'
+  var elPannesDelta = document.getElementById('log-pannes-delta')
+  if(elPannesDelta){
+    elPannesDelta.textContent = pannesActives.length>0 ? 'Véhicule en panne' : 'Véhicule opérationnel'
+    elPannesDelta.className = 'kpi-delta ' + (pannesActives.length>0 ? 'down' : 'neutral')
+  }
   var badgeGolf = document.getElementById('golf-statut-badge')
   if(badgeGolf){
     if(pannesActives.length>0){ badgeGolf.className='badge b-red'; badgeGolf.textContent='⚠️ En panne' }
@@ -8794,7 +8930,7 @@ function changerMotDePasse(){
   function showFb(msg, ok){
     if(!fb) return
     fb.style.display='block'
-    fb.style.color = ok ? '#34D399' : '#F87171'
+    fb.style.color = ok ? '#15803D' : '#DC2626'
     fb.textContent = msg
     setTimeout(function(){ fb.style.display='none' }, 4000)
   }
@@ -8833,7 +8969,7 @@ function resetSessionTimer(){
     var app = document.getElementById('app')
     if(app && app.style.display !== 'none'){
       // Verrouiller l'écran plutôt que déconnecter
-      if(typeof verrouillerEcran === 'function'){
+      if(typeof verrouillerEcran === 'function' && !ecranVerrouille()){
         verrouillerEcran()
         console.log('[AviManager] Session verrouillée après inactivité.')
       }
