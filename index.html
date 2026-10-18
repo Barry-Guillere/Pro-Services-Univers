@@ -3758,6 +3758,7 @@ function doLogout(){
   try{ localStorage.removeItem('avi_session_email') }catch(e){}
   if(sbClient){ try{ sbClient.auth.signOut() }catch(e){} }
   currentUser = null
+  _cloudDroits = null
   document.getElementById('login-screen').style.display='flex'
   document.getElementById('app').style.display='none'
 }
@@ -4465,10 +4466,37 @@ function _cloudCall(token, payload){
   })
 }
 
+// ── Droits du compte connecté, fournis par cloud-sync (action 'droits') ──
+//    { lecture: '*' | [tables], ecriture: '*' | [tables] }. null = inconnus
+//    (fonction pas encore redéployée, réseau...) : on tente toutes les tables
+//    et les refus 403 sont ignorés en silence.
+var _cloudDroits = null
+
+function _cloudChargerDroits(token){
+  if(_cloudDroits) return Promise.resolve(_cloudDroits)
+  return _cloudCall(token, { action:'droits' }).then(function(r){
+    if(!r.ok) return null
+    return r.json().then(function(d){
+      var valide = function(v){ return v==='*' || Array.isArray(v) }
+      if(d && valide(d.lecture) && valide(d.ecriture)) _cloudDroits = d
+      return _cloudDroits
+    })
+  }).catch(function(){ return null })
+}
+
+function _cloudPeut(droits, mode, table){
+  if(!droits) return true
+  var liste = droits[mode]
+  return liste==='*' || (Array.isArray(liste) && liste.indexOf(table)>=0)
+}
+
 // ── Envoi (push) — une requête par table, avec upsert sur id ──
-function _cloudUpsert(token, table, rows, onConflict){
+//    Tables non modifiables par ce rôle : pas d'envoi. Refus 403 : ignoré en silence.
+function _cloudUpsert(token, table, rows, onConflict, droits){
   if(!rows || !rows.length) return Promise.resolve()
+  if(!_cloudPeut(droits, 'ecriture', table)) return Promise.resolve()
   return _cloudCall(token, { action:'upsert', table: table, rows: rows, onConflict: onConflict||'id' }).then(function(r){
+    if(r.status===403) return
     if(!r.ok){
       return r.text().then(function(txt){
         throw new Error(table+' : HTTP '+r.status+' — '+txt)
@@ -4528,24 +4556,26 @@ function syncToSupabase(data){
     return {id:p.date+'_'+p.bat, date:p.date||'', bat:p.bat||'', taux:p.taux||0, march:p.march||0, total:p.total||0, feles:p.feles||0, sales:p.sales||0, morts:p.morts||0, alim:p.alim||0, eau:p.eau||0}
   })
 
-  Promise.all([
-    _cloudUpsert(token,'finance_operations',financeOps),
-    _cloudUpsert(token,'finance_soldes',financeSoldes,'compte'),
-    _cloudUpsert(token,'stock_quantites',stockQte,'produit_id'),
-    _cloudUpsert(token,'stock_mouvements',stockMvts),
-    _cloudUpsert(token,'commerce_clients',clients),
-    _cloudUpsert(token,'commerce_factures',factures),
-    _cloudUpsert(token,'commerce_bdc',bdcs),
-    _cloudUpsert(token,'points_de_vente',pdv),
-    _cloudUpsert(token,'pdv_ventes',pdvVentes),
-    _cloudUpsert(token,'logistique_voyages',voyages),
-    _cloudUpsert(token,'logistique_recus',recus),
-    _cloudUpsert(token,'logistique_pannes',pannes),
-    _cloudUpsert(token,'sante_evenements',santeEvts),
-    _cloudUpsert(token,'production_pontes',pontes,'id'),
-    _cloudUpsert(token,'logistique_config',[{id:'principal',km_actuel:data.LOG_kmActuel||0,voyages_total:data.LOG_voyTotal||0,voyages_depuis_vidange:data.LOG_voyDepuis||0,seuil_vidange:data.LOG_seuil||50,date_derniere_vidange:data.LOG_dateVidange}],'id'),
-    _cloudUpsert(token,'parametres',[{id:'principal',data:JSON.parse(localStorage.getItem('avi_params_v2')||'{}')}],'id')
-  ]).then(function(){
+  _cloudChargerDroits(token).then(function(droits){
+  return Promise.all([
+    _cloudUpsert(token,'finance_operations',financeOps,'id',droits),
+    _cloudUpsert(token,'finance_soldes',financeSoldes,'compte',droits),
+    _cloudUpsert(token,'stock_quantites',stockQte,'produit_id',droits),
+    _cloudUpsert(token,'stock_mouvements',stockMvts,'id',droits),
+    _cloudUpsert(token,'commerce_clients',clients,'id',droits),
+    _cloudUpsert(token,'commerce_factures',factures,'id',droits),
+    _cloudUpsert(token,'commerce_bdc',bdcs,'id',droits),
+    _cloudUpsert(token,'points_de_vente',pdv,'id',droits),
+    _cloudUpsert(token,'pdv_ventes',pdvVentes,'id',droits),
+    _cloudUpsert(token,'logistique_voyages',voyages,'id',droits),
+    _cloudUpsert(token,'logistique_recus',recus,'id',droits),
+    _cloudUpsert(token,'logistique_pannes',pannes,'id',droits),
+    _cloudUpsert(token,'sante_evenements',santeEvts,'id',droits),
+    _cloudUpsert(token,'production_pontes',pontes,'id',droits),
+    _cloudUpsert(token,'logistique_config',[{id:'principal',km_actuel:data.LOG_kmActuel||0,voyages_total:data.LOG_voyTotal||0,voyages_depuis_vidange:data.LOG_voyDepuis||0,seuil_vidange:data.LOG_seuil||50,date_derniere_vidange:data.LOG_dateVidange}],'id',droits),
+    _cloudUpsert(token,'parametres',[{id:'principal',data:JSON.parse(localStorage.getItem('avi_params_v2')||'{}')}],'id',droits)
+  ])
+  }).then(function(){
     setCloudStatus('ok', '☁️ Synchronisé à '+new Date().toLocaleTimeString('fr-FR'))
   }).catch(function(err){
     setCloudStatus('error', '⚠️ Envoi partiel : '+err.message)
@@ -4554,9 +4584,16 @@ function syncToSupabase(data){
 }
 
 // ── Réception (pull) — une requête par table ──
-function _cloudFetch(token, table, select){
-  return _cloudCall(token, { action:'select', table: table, select: select||'*' })
-    .then(function(r){ if(!r.ok) throw new Error(table+' : HTTP '+r.status); return r.json() })
+//    Renvoie null si la table n'est pas lisible par ce rôle (droits connus,
+//    ou refus 403) : ignoré en silence, les autres tables continuent.
+function _cloudFetch(token, table, droits){
+  if(!_cloudPeut(droits, 'lecture', table)) return Promise.resolve(null)
+  return _cloudCall(token, { action:'select', table: table, select: '*' })
+    .then(function(r){
+      if(r.status===403) return null
+      if(!r.ok) throw new Error(table+' : HTTP '+r.status)
+      return r.json()
+    })
 }
 
 // ── Fusionne les données reçues du serveur avec les données locales,
@@ -4600,40 +4637,51 @@ function pullFromSupabase(applyIfNewer, cb){
   _cloudToken().then(function(token){
   if(!token){ if(cb) cb(false); return }
 
-  Promise.all([
-    _cloudFetch(token,'finance_operations'), _cloudFetch(token,'finance_soldes'),
-    _cloudFetch(token,'stock_quantites'), _cloudFetch(token,'stock_mouvements'),
-    _cloudFetch(token,'commerce_clients'), _cloudFetch(token,'commerce_factures'),
-    _cloudFetch(token,'points_de_vente'), _cloudFetch(token,'logistique_voyages'),
-    _cloudFetch(token,'logistique_recus'), _cloudFetch(token,'logistique_pannes'),
-    _cloudFetch(token,'sante_evenements'), _cloudFetch(token,'logistique_config'),
-    _cloudFetch(token,'parametres'), _cloudFetch(token,'production_pontes'),
-    _cloudFetch(token,'pdv_ventes'),
-    // Tolérant : si cloud-sync n'est pas encore redéployé avec commerce_bdc,
-    // on garde les BDC locaux au lieu de faire échouer toute la réception.
-    _cloudFetch(token,'commerce_bdc').catch(function(){ return null })
-  ]).then(function(results){
-    var [finOps, finSoldes, stkQte, stkMvts, clients, factures, pdv, voyages, recus, pannes, sante, logCfg, params, pontes, pdvVentesRemote, bdcRows] = results
+  _cloudChargerDroits(token).then(function(droits){
+  var TABLES = ['finance_operations','finance_soldes','stock_quantites','stock_mouvements',
+    'commerce_clients','commerce_factures','points_de_vente','logistique_voyages',
+    'logistique_recus','logistique_pannes','sante_evenements','logistique_config',
+    'parametres','production_pontes','pdv_ventes','commerce_bdc']
+  return Promise.all(TABLES.map(function(t){ return _cloudFetch(token, t, droits) }))
+  .then(function(results){
+    // Résultat par table : lignes reçues, ou [] si le rôle n'a pas le droit
+    // de la lire (la copie locale est alors réduite aux éléments récents pas
+    // encore envoyés, comme si le serveur était vide), ou null si on ne sait
+    // pas (droits inconnus + refus 403) : copie locale laissée telle quelle.
+    var R = {}
+    TABLES.forEach(function(t, i){
+      R[t] = results[i]!==null ? results[i] : (droits && !_cloudPeut(droits,'lecture',t) ? [] : null)
+    })
+    var finOps=R.finance_operations, stkMvts=R.stock_mouvements, clients=R.commerce_clients,
+        factures=R.commerce_factures, pdv=R.points_de_vente, voyages=R.logistique_voyages,
+        recus=R.logistique_recus, pannes=R.logistique_pannes, sante=R.sante_evenements,
+        logCfg=R.logistique_config, params=R.parametres, pontes=R.production_pontes,
+        pdvVentesRemote=R.pdv_ventes, bdcRows=R.commerce_bdc
 
-    if(typeof FIN!=='undefined'){
+    if(typeof FIN!=='undefined' && finOps){
       var finOpsRemote = finOps.map(function(o){ return {id:o.id, date:o.date, type:o.type, cat:o.categorie, desc:o.description, compte:o.compte, montant:parseFloat(o.montant)||0, resp:o.responsable} })
       FIN.operations = _fusionnerParId(FIN.operations, finOpsRemote)
       recalculerSoldes()
     }
-    if(typeof STOCK_MOUVEMENTS!=='undefined'){
+    if(typeof STOCK_MOUVEMENTS!=='undefined' && stkMvts){
       var stkMvtsRemote = stkMvts.map(function(m){ return {id:m.id, date:m.date, prodId:m.produit_id, prodNom:m.produit_nom, type:m.type, qte:parseFloat(m.quantite)||0, unite:m.unite, prix:parseFloat(m.prix)||0, total:parseFloat(m.total)||0, motif:m.motif, bloc:m.batiment, resp:m.responsable} })
       STOCK_MOUVEMENTS = _fusionnerParId(STOCK_MOUVEMENTS, stkMvtsRemote)
       if(typeof recalculerStock==='function') recalculerStock()
     }
     if(typeof COMMERCE!=='undefined'){
-      var clientsRemote = clients.map(function(cl){ return {id:cl.id, nom:cl.nom, type:cl.type, tel:cl.telephone, email:cl.email, adresse:cl.adresse, delai:cl.delai_paiement, plafond:cl.plafond_credit, solde:cl.solde} })
-      COMMERCE.clients = _fusionnerParId(COMMERCE.clients, clientsRemote)
-      var facturesRemote = factures.map(function(f){ return {id:f.id, num:f.numero, date:f.date, clientId:f.client_id, clientNom:f.client_nom, lignes:f.articles||[], total:f.total, acompte:f.acompte, solde:f.solde, paiement:f.paiement, statut:f.statut} })
-      COMMERCE.factures = _fusionnerParId(COMMERCE.factures, facturesRemote)
+      if(clients){
+        var clientsRemote = clients.map(function(cl){ return {id:cl.id, nom:cl.nom, type:cl.type, tel:cl.telephone, email:cl.email, adresse:cl.adresse, delai:cl.delai_paiement, plafond:cl.plafond_credit, solde:cl.solde} })
+        COMMERCE.clients = _fusionnerParId(COMMERCE.clients, clientsRemote)
+      }
+      if(factures){
+        var facturesRemote = factures.map(function(f){ return {id:f.id, num:f.numero, date:f.date, clientId:f.client_id, clientNom:f.client_nom, lignes:f.articles||[], total:f.total, acompte:f.acompte, solde:f.solde, paiement:f.paiement, statut:f.statut} })
+        COMMERCE.factures = _fusionnerParId(COMMERCE.factures, facturesRemote)
+      }
       // Table encore vide côté serveur (première synchro) : on garde les BDC
       // locaux, sinon _fusionnerParId supprimerait ceux de plus de 2 minutes ;
-      // l'autosave qui suit les enverra.
-      if(bdcRows && bdcRows.length){
+      // l'autosave qui suit les enverra. Sauf si le rôle n'a pas le droit de
+      // les lire : copie locale réduite comme pour les autres tables.
+      if(bdcRows && (bdcRows.length || !_cloudPeut(droits,'lecture','commerce_bdc'))){
         var bdcRemote = bdcRows.map(function(r){
           var b = Object.assign({}, r.data||{})
           b.id = 'BDC-'+r.id
@@ -4643,28 +4691,36 @@ function pullFromSupabase(applyIfNewer, cb){
       }
     }
     if(typeof POINTS_DE_VENTE!=='undefined'){
-      var pdvRemote = pdv.map(function(p){ return {id:p.id, nom:p.nom, zone:p.zone, adresse:p.adresse, gerantSelect:p.gerant_select, gerantNom:p.gerant_nom, gerantTel:p.gerant_tel, commission:p.commission, produits:p.produits, stock:p.stock, statut:p.statut, dateCreation:p.date_creation} })
-      POINTS_DE_VENTE = _fusionnerParId(POINTS_DE_VENTE, pdvRemote)
-      if(typeof PDV_VENTES!=='undefined'){
-        var pdvVentesFusionne = (pdvVentesRemote||[]).map(function(v){ return {id:v.id, pdvId:v.pdv_id, date:v.date, produit:v.produit, produitNom:v.produit_nom, qte:parseFloat(v.qte)||0, pu:parseFloat(v.pu)||0, montant:parseFloat(v.montant)||0, resp:v.responsable} })
+      if(pdv){
+        var pdvRemote = pdv.map(function(p){ return {id:p.id, nom:p.nom, zone:p.zone, adresse:p.adresse, gerantSelect:p.gerant_select, gerantNom:p.gerant_nom, gerantTel:p.gerant_tel, commission:p.commission, produits:p.produits, stock:p.stock, statut:p.statut, dateCreation:p.date_creation} })
+        POINTS_DE_VENTE = _fusionnerParId(POINTS_DE_VENTE, pdvRemote)
+      }
+      if(typeof PDV_VENTES!=='undefined' && pdvVentesRemote){
+        var pdvVentesFusionne = pdvVentesRemote.map(function(v){ return {id:v.id, pdvId:v.pdv_id, date:v.date, produit:v.produit, produitNom:v.produit_nom, qte:parseFloat(v.qte)||0, pu:parseFloat(v.pu)||0, montant:parseFloat(v.montant)||0, resp:v.responsable} })
         PDV_VENTES = _fusionnerParId(PDV_VENTES, pdvVentesFusionne)
       }
       if(typeof recalculerVentesPDV==='function') recalculerVentesPDV()
     }
     if(typeof LOG!=='undefined'){
-      var voyagesRemote = voyages.map(function(v){ return {id:v.id, date:v.date, type:v.type, dest:v.destination, chauffeur:v.chauffeur, kmDep:v.km_depart, kmArr:v.km_arrivee, litres:v.litres, cout:v.cout, notes:v.notes} })
-      LOG.voyages = _fusionnerParId(LOG.voyages, voyagesRemote)
-      var recusRemote = recus.map(function(r){ return {id:r.id, date:r.date, litres:r.litres, montant:r.montant, station:r.station, notes:r.notes} })
-      LOG.recus = _fusionnerParId(LOG.recus, recusRemote)
-      var pannesRemote = pannes.map(function(p){ return {id:p.id, date:p.date, gravite:p.gravite, type:p.type, desc:p.description, lieu:p.lieu, par:p.signale_par, cout:p.cout, statut:p.statut} })
-      LOG.pannes = _fusionnerParId(LOG.pannes, pannesRemote)
+      if(voyages){
+        var voyagesRemote = voyages.map(function(v){ return {id:v.id, date:v.date, type:v.type, dest:v.destination, chauffeur:v.chauffeur, kmDep:v.km_depart, kmArr:v.km_arrivee, litres:v.litres, cout:v.cout, notes:v.notes} })
+        LOG.voyages = _fusionnerParId(LOG.voyages, voyagesRemote)
+      }
+      if(recus){
+        var recusRemote = recus.map(function(r){ return {id:r.id, date:r.date, litres:r.litres, montant:r.montant, station:r.station, notes:r.notes} })
+        LOG.recus = _fusionnerParId(LOG.recus, recusRemote)
+      }
+      if(pannes){
+        var pannesRemote = pannes.map(function(p){ return {id:p.id, date:p.date, gravite:p.gravite, type:p.type, desc:p.description, lieu:p.lieu, par:p.signale_par, cout:p.cout, statut:p.statut} })
+        LOG.pannes = _fusionnerParId(LOG.pannes, pannesRemote)
+      }
       if(logCfg && logCfg[0]){
         LOG.kmActuel=logCfg[0].km_actuel||0; LOG.voyTotal=logCfg[0].voyages_total||0
         LOG.voyDepuis=logCfg[0].voyages_depuis_vidange||0; LOG.seuil=logCfg[0].seuil_vidange||50
         LOG.dateVidange=logCfg[0].date_derniere_vidange
       }
     }
-    if(typeof SANTE_EVENTS!=='undefined'){
+    if(typeof SANTE_EVENTS!=='undefined' && sante){
       var santeRemote = sante.map(function(e){ return {id:e.id, date:e.date, type:e.type, gravite:e.gravite, desc:e.description, bloc:e.batiment, resp:e.responsable} })
       var santeFusionne = _fusionnerParId(SANTE_EVENTS, santeRemote)
       SANTE_EVENTS.length = 0
@@ -4673,8 +4729,8 @@ function pullFromSupabase(applyIfNewer, cb){
     if(params && params[0] && params[0].data){
       try{ localStorage.setItem('avi_params_v2', JSON.stringify(params[0].data)) }catch(e){}
     }
-    if(typeof PONTES_HISTORIQUE!=='undefined'){
-      var pontesRemote = (pontes||[]).map(function(p){ return {date:p.date, bat:p.bat, taux:parseFloat(p.taux)||0, march:parseInt(p.march)||0, total:parseInt(p.total)||0, feles:parseInt(p.feles)||0, sales:parseInt(p.sales)||0, morts:parseInt(p.morts)||0, alim:parseFloat(p.alim)||0, eau:parseFloat(p.eau)||0} })
+    if(typeof PONTES_HISTORIQUE!=='undefined' && pontes){
+      var pontesRemote = pontes.map(function(p){ return {date:p.date, bat:p.bat, taux:parseFloat(p.taux)||0, march:parseInt(p.march)||0, total:parseInt(p.total)||0, feles:parseInt(p.feles)||0, sales:parseInt(p.sales)||0, morts:parseInt(p.morts)||0, alim:parseFloat(p.alim)||0, eau:parseFloat(p.eau)||0} })
       PONTES_HISTORIQUE = _fusionnerPontes(PONTES_HISTORIQUE, pontesRemote)
       if(typeof PONTES_SESSION!=='undefined'){
         var todayStrPonte = new Date().toISOString().split('T')[0]
@@ -4691,6 +4747,7 @@ function pullFromSupabase(applyIfNewer, cb){
     }
     setCloudStatus('ok', '⬇️ Données reçues du serveur ('+new Date().toLocaleTimeString('fr-FR')+')')
     if(cb) cb(true)
+  })
   }).catch(function(err){
     setCloudStatus('error', '⚠️ Réception impossible : '+err.message)
     if(cb) cb(false)
