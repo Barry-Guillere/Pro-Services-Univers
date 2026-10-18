@@ -375,6 +375,9 @@ html::-webkit-scrollbar-thumb{border-color:var(--bg)}
 #verrou-pin{width:100%;min-height:var(--tap);border:1.5px solid var(--gray-200);border-radius:12px;text-align:center;font-size:16px;letter-spacing:.4em;outline:none;margin-bottom:6px}
 #verrou-pin:focus{border-color:var(--brand)}
 .verrou-erreur{min-height:16px;font-size:10px;font-weight:600;color:#DC2626;margin-bottom:6px}
+.verrou-aide{font-size:10px;color:var(--gray-600);line-height:1.5;margin-bottom:10px}
+.verrou-champ{width:100%;min-height:var(--tap);border:1.5px solid var(--gray-200);border-radius:12px;text-align:center;font-size:14px;letter-spacing:.3em;outline:none;margin-bottom:8px}
+.verrou-champ:focus{border-color:var(--brand)}
 .verrou-sortie{margin-top:8px;background:none;border:none;color:var(--gray-500);font-size:10px;text-decoration:underline;cursor:pointer;width:100%}
 
 /* ── Écran : tableau de bord ── */
@@ -3586,9 +3589,18 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
      <div class="verrou-icone">🔒</div>
      <div class="verrou-titre" id="verrou-titre">Session verrouillée</div>
      <div class="verrou-nom" id="verrou-nom"></div>
-     <input type="password" id="verrou-pin" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Code PIN" onkeydown="if(event.key==='Enter')deverrouillerEcran()">
-     <div class="verrou-erreur" id="verrou-erreur"></div>
-     <button class="btn btn-p" style="width:100%" onclick="deverrouillerEcran()">Déverrouiller</button>
+     <div id="verrou-mode-saisie">
+       <input type="password" id="verrou-pin" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="Code PIN" onkeydown="if(event.key==='Enter')deverrouillerEcran()">
+       <div class="verrou-erreur" id="verrou-erreur"></div>
+       <button class="btn btn-p" style="width:100%" onclick="deverrouillerEcran()">Déverrouiller</button>
+     </div>
+     <div id="verrou-mode-creation" style="display:none">
+       <div class="verrou-aide" id="verrou-aide-creation"></div>
+       <input type="password" id="verrou-pin-nouveau" class="verrou-champ" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="Nouveau code PIN">
+       <input type="password" id="verrou-pin-confirm" class="verrou-champ" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="Confirmer le code" onkeydown="if(event.key==='Enter')enregistrerPinVerrou()">
+       <div class="verrou-erreur" id="verrou-erreur-creation"></div>
+       <button class="btn btn-p" style="width:100%" onclick="enregistrerPinVerrou()">Enregistrer et déverrouiller</button>
+     </div>
      <button class="verrou-sortie" onclick="quitterVerrou()">Se déconnecter</button>
    </div>
  </div>
@@ -6742,19 +6754,41 @@ function updateRapOptions(){
 // ════════════════════════════════════════════════════
 //  ANTIVOL
 // ════════════════════════════════════════════════════
+// Code PIN propre à cet appareil (localStorage). Aucun code par défaut :
+// il est choisi au premier verrouillage.
 function getAvPin(){
-  try{ return localStorage.getItem('av_pin') || '1234' }catch(e){ return '1234' }
+  try{ return localStorage.getItem('av_pin') || null }catch(e){ return null }
+}
+// Renvoie un message d'erreur si le code est refusé, '' s'il est accepté.
+function motifPinRefuse(pin){
+  pin = String(pin||'')
+  if(!/^\d{4,}$/.test(pin)) return 'Le code PIN doit contenir au moins 4 chiffres (chiffres uniquement).'
+  if(/^(\d)\1+$/.test(pin)) return 'Code trop simple : tous les chiffres sont identiques.'
+  var monte = true, descend = true
+  for(var i=1;i<pin.length;i++){
+    var d = pin.charCodeAt(i) - pin.charCodeAt(i-1)
+    if(d !== 1) monte = false
+    if(d !== -1) descend = false
+  }
+  if(monte || descend) return 'Code trop simple : suite de chiffres (ex. 1234, 9876).'
+  return ''
 }
 
 function changerCodePin(){
-  var actuel = prompt('Code PIN actuel :')
-  if(actuel === null) return
-  if(actuel !== getAvPin()){ alert('Code PIN actuel incorrect.'); return }
-  var nouveau = prompt('Nouveau code PIN (4 chiffres) :')
+  if(getAvPin()){
+    var actuel = prompt('Code PIN actuel :')
+    if(actuel === null) return
+    if(actuel !== getAvPin()){ alert('Code PIN actuel incorrect.'); return }
+  }
+  var nouveau = prompt('Nouveau code PIN (au moins 4 chiffres, pas de code trop simple) :')
   if(nouveau === null) return
-  if(!/^\d{4}$/.test(nouveau)){ alert('Le code PIN doit contenir exactement 4 chiffres.'); return }
+  var motif = motifPinRefuse(nouveau)
+  if(motif){ alert(motif); return }
+  var confirmation = prompt('Confirmez le nouveau code PIN :')
+  if(confirmation === null) return
+  if(confirmation !== nouveau){ alert('Les deux codes ne correspondent pas.'); return }
   try{ localStorage.setItem('av_pin', nouveau) }catch(e){}
-  alert('Code PIN mis à jour.')
+  alert('Code PIN mis à jour pour cet appareil.')
 }
 
 function majDelaiVerrouillage(sel){
@@ -6785,12 +6819,40 @@ function verrouillerEcran(){
   var pin = document.getElementById('verrou-pin'); if(pin) pin.value = ''
   v.style.display = 'flex'
   try{ closeMobileSidebar() }catch(e){}
-  setTimeout(function(){ if(pin) pin.focus() }, 50)
+  if(!getAvPin()) _modeVerrou('creation', 'Aucun code PIN sur cet appareil. Choisissez-en un : au moins 4 chiffres, pas de code trop simple (1234, 0000, 1111, 2345…).')
+  else { _modeVerrou('saisie'); setTimeout(function(){ if(pin) pin.focus() }, 50) }
+}
+function _modeVerrou(mode, aide){
+  var s = document.getElementById('verrou-mode-saisie'), c = document.getElementById('verrou-mode-creation')
+  if(s) s.style.display = mode==='saisie' ? '' : 'none'
+  if(c) c.style.display = mode==='creation' ? '' : 'none'
+  var titre = document.getElementById('verrou-titre')
+  if(titre) titre.textContent = mode==='creation' ? 'Choisissez votre code PIN' : 'Session verrouillée'
+  if(mode==='creation'){
+    var a = document.getElementById('verrou-aide-creation'); if(a) a.textContent = aide || ''
+    ;['verrou-pin-nouveau','verrou-pin-confirm'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value='' })
+    var ec = document.getElementById('verrou-erreur-creation'); if(ec) ec.textContent = ''
+    setTimeout(function(){ var n=document.getElementById('verrou-pin-nouveau'); if(n) n.focus() }, 50)
+  }
+}
+function enregistrerPinVerrou(){
+  var n = (document.getElementById('verrou-pin-nouveau')||{}).value || ''
+  var c = (document.getElementById('verrou-pin-confirm')||{}).value || ''
+  var ec = document.getElementById('verrou-erreur-creation')
+  var motif = motifPinRefuse(n)
+  if(!motif && n !== c) motif = 'Les deux codes ne correspondent pas.'
+  if(motif){ if(ec) ec.textContent = motif; return }
+  try{ localStorage.setItem('av_pin', n) }catch(e){ if(ec) ec.textContent = "Impossible d'enregistrer le code sur cet appareil."; return }
+  _leverVerrou()
+  try{ resetSessionTimer() }catch(e){}
 }
 function deverrouillerEcran(){
   var pin = document.getElementById('verrou-pin')
   var err = document.getElementById('verrou-erreur')
-  if(pin && pin.value === getAvPin()){
+  var code = getAvPin()
+  if(pin && code && pin.value === code){
+    // Ancien code trop simple (ex. 1234 choisi avant ces règles) : en choisir un nouveau
+    if(motifPinRefuse(code)){ _modeVerrou('creation', 'Votre code PIN est trop simple. Choisissez-en un nouveau : au moins 4 chiffres, pas de suite ni de chiffres identiques.'); return }
     _leverVerrou()
     try{ resetSessionTimer() }catch(e){}
   } else {
