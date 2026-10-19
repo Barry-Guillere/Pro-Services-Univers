@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 input,select,textarea,button{font-family:inherit}
@@ -3609,7 +3609,7 @@ Si tu ne sais pas répondre : "Je transmets votre demande à notre équipe."
  <div id="autosave-indicator" style="position:fixed;bottom:14px;right:16px;background:rgba(29,158,117,.92);color:white;font-size:11px;font-weight:600;padding:6px 14px;border-radius:20px;opacity:0;transition:opacity .4s;z-index:9999;pointer-events:none"></div>
 </div><!-- /app -->
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 
 // ══════════════════════════════════════════
 //  UTILISATEURS
@@ -3857,7 +3857,8 @@ function _chargerSessionDepuisSupabase(authUser){
 
 // ── Annuaire complet de l'équipe (page Admin) depuis Supabase ──
 function chargerEquipeDepuisSupabase(){
-  if(!sbClient) return Promise.resolve()
+  // Avant connexion, rien à lire : la table n'est accessible qu'aux comptes connectés
+  if(!sbClient || !currentUser) return Promise.resolve()
   return sbClient.from('profiles').select('id,email,name,tel,role,init').then(function(res){
     if(!res || !res.data) return
     res.data.forEach(function(p){
