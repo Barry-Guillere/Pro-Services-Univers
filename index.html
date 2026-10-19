@@ -3639,6 +3639,13 @@ var sbClient = SUPABASE_READY ? supabase.createClient(SUPABASE_URL, SUPABASE_ANO
 // plus aucune identité ni mot de passe en dur dans le code source.
 var USERS = {}
 
+// Initiales de secours quand le profil n'en a pas : premières lettres des mots du nom (3 max)
+function _initialesDepuisNom(nom){
+  var mots = String(nom||'').trim().split(/\s+/).filter(Boolean)
+  if(!mots.length) return '?'
+  return mots.slice(0,3).map(function(m){ return m.charAt(0) }).join('').toUpperCase()
+}
+
 // ════════════════════════════════════════════════════════════
 //  MODULE ADMINISTRATION — chargement des sous-sections
 // ════════════════════════════════════════════════════════════
@@ -3662,12 +3669,12 @@ function chargerAdminEquipe(){
     var u = USERS[email]
     return '<tr>'
       +'<td style="display:flex;align-items:center;gap:8px">'
-      +'<div style="width:28px;height:28px;border-radius:7px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;color:var(--brand-dark);flex-shrink:0">'+u.init+'</div>'
-      +'<span style="font-weight:700">'+u.name+'</span>'
+      +'<div style="width:28px;height:28px;border-radius:7px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;color:var(--brand-dark);flex-shrink:0">'+esc(u.init||_initialesDepuisNom(u.name))+'</div>'
+      +'<span style="font-weight:700">'+esc(u.name)+'</span>'
       +'</td>'
-      +'<td style="font-size:12.5px;color:var(--gray-500)">'+u.role+'</td>'
-      +'<td style="font-size:12.5px">'+u.tel+'</td>'
-      +'<td style="font-size:12px;color:var(--gray-500)">'+email+'</td>'
+      +'<td style="font-size:12.5px;color:var(--gray-500)">'+esc(u.role||'—')+'</td>'
+      +'<td style="font-size:12.5px">'+esc(u.tel||'—')+'</td>'
+      +'<td style="font-size:12px;color:var(--gray-500)">'+esc(email)+'</td>'
       +'<td><span class="badge b-green" style="font-size:10px">Actif</span></td>'
       +'</tr>'
   }).join('')
@@ -3844,7 +3851,7 @@ function _chargerSessionDepuisSupabase(authUser){
       name: p.name || authUser.email,
       tel:  p.tel  || '',
       role: p.role || 'Utilisateur',
-      init: p.init || (p.name || authUser.email).slice(0,2).toUpperCase()
+      init: p.init || _initialesDepuisNom(p.name || authUser.email)
     }
     USERS[authUser.email] = u
     _activerSession(u, authUser.email)
@@ -3862,7 +3869,7 @@ function chargerEquipeDepuisSupabase(){
   return sbClient.from('profiles').select('id,email,name,tel,role,init').then(function(res){
     if(!res || !res.data) return
     res.data.forEach(function(p){
-      USERS[p.email] = { name:p.name, tel:p.tel, role:p.role, init:p.init }
+      USERS[p.email] = { name:p.name||p.email, tel:p.tel||'', role:p.role||'', init:p.init||_initialesDepuisNom(p.name||p.email) }
     })
     chargerAdminEquipe()
   }).catch(function(){})
