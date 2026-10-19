@@ -3659,6 +3659,24 @@ function chargerAdmin(){
 }
 
 // ── Équipe configurée (depuis USERS) ───────────────────────────
+// Membre de « Paramètres → Équipe & Responsables » correspondant à un compte, retrouvé
+// par le nom (sans tenir compte des accents, majuscules ni espaces). Ces paramètres
+// sont la référence pour le téléphone, les initiales et le rôle affichés.
+function _normaliserNom(nom){
+  return String(nom||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLowerCase()
+}
+function _membreEquipeParametres(nom){
+  var cle = _normaliserNom(nom)
+  if(!cle) return null
+  var prms = null
+  try{ prms = JSON.parse(localStorage.getItem('avi_params_v2')||'null') }catch(e){}
+  var equipe = (prms && Array.isArray(prms.equipe)) ? prms.equipe : []
+  for(var i=0;i<equipe.length;i++){
+    if(equipe[i] && _normaliserNom(equipe[i].nom) === cle) return equipe[i]
+  }
+  return null
+}
+
 function chargerAdminEquipe(){
   var tbody = document.getElementById('adm-equipe-tbody')
   var emails = Object.keys(USERS)
@@ -3666,7 +3684,15 @@ function chargerAdminEquipe(){
   if(nb) nb.textContent = emails.length
   if(!tbody) return
   tbody.innerHTML = emails.map(function(email){
-    var u = USERS[email]
+    var p = USERS[email]
+    var m = _membreEquipeParametres(p.name)
+    // Valeurs des Paramètres en priorité ; profil Supabase si le champ y est vide
+    var u = {
+      name: p.name,
+      tel:  (m && String(m.tel||'').trim())  || p.tel,
+      init: (m && String(m.init||'').trim()) || p.init,
+      role: (m && String(m.role||'').trim()) || p.role
+    }
     return '<tr>'
       +'<td style="display:flex;align-items:center;gap:8px">'
       +'<div style="width:28px;height:28px;border-radius:7px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;color:var(--brand-dark);flex-shrink:0">'+esc(u.init||_initialesDepuisNom(u.name))+'</div>'
